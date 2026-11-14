@@ -417,21 +417,67 @@ body {
 .mission-right {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0.55rem;
   width: 100%;
+  align-content: start;
 }
 
 .zone-earth,
 .zone-ai {
-  min-height: auto;
+  min-height: 0;
   height: auto;
+  max-width: 100%;
 }
 
 .zone-earth .zone-body,
 .zone-ai .zone-body {
-  overflow: visible;
-  max-height: none;
+  overflow: auto;
+  max-height: min(52vh, 560px);
+}
+
+.demo-on .zone-ai.zone-focus .zone-body {
+  max-height: min(68vh, 720px);
+}
+
+.demo-on .zone-earth:not(.zone-focus) {
+  opacity: 0.72;
+}
+
+.demo-on .zone-ai:not(.zone-focus) {
+  opacity: 0.72;
+}
+
+.ai-panel {
+  gap: 0.35rem;
+}
+
+.anomaly-head {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.anomaly-summary {
+  font-size: 0.78rem !important;
+  color: var(--muted) !important;
+}
+
+.model-posture summary {
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.model-posture summary::-webkit-details-marker {
+  display: none;
+}
+
+.model-posture[open] summary {
+  margin-bottom: 0.3rem;
+  color: var(--ink);
 }
 
 .side-panel header p,

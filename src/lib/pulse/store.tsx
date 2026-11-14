@@ -395,7 +395,6 @@ export function PulseProvider({ children }: { children: ReactNode }) {
       setAnomaly(next);
       setRecoveryProgress(0);
       setSelectedCrewId(crewId);
-      setTab("vitals");
       pushLog(`${next.problemLabel} on ${crewId}`);
       pushLog(`Local AI advising from citations. ${next.datasetNote}`);
       const receipt = createReceipt({
@@ -577,20 +576,30 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         id: "vitals-anomaly",
         title: "Crew vital anomaly",
         caption:
-          "Local AI flags Nova Reyes: high heart rate. Cited actions ready.",
-        lookAt: "Look at B Crew (Nova hot) and E Local AI problem + citations.",
-        focus: "ai",
-        tab: "overview",
+          "Nova Reyes heart rate spikes above the mission band. Watch the vitals.",
+        lookAt: "Look at C Live floor vitals climbing, then E for cited advice.",
+        focus: "floor",
+        tab: "vitals",
         run: () => triggerAnomaly("nova", "tachycardia"),
+      },
+      {
+        id: "ai-advise",
+        title: "Local AI cites next steps",
+        caption:
+          "Local AI names the problem and lists cited procedures only.",
+        lookAt: "Look at E Local AI: problem line, citation IDs, Apply controls.",
+        focus: "ai",
+        tab: "vitals",
+        run: () => pushLog("Local AI presenting cited standing orders."),
       },
       {
         id: "act",
         title: "Cited AI actions applied",
         caption:
-          "Offline AI applies rest, fluids, and tighter HR watch with citation IDs.",
-        lookAt: "Look at E Local AI: Apply all cited actions, then monitoring.",
+          "Crew applies rest, fluids, and tighter heart-rate watch from citations.",
+        lookAt: "Look at E Local AI as actions mark Applied, then monitoring.",
         focus: "ai",
-        tab: "overview",
+        tab: "vitals",
         run: () => applyAllInterventions(),
       },
       {
@@ -598,9 +607,9 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         title: "Vitals normalizing",
         caption:
           "After cited procedures, monitoring continues until vitals are normal.",
-        lookAt: "Look at C Live floor: HR and SpO2 return to normal numbers.",
+        lookAt: "Look at C Live floor: heart rate and SpO2 return to normal.",
         focus: "floor",
-        tab: "overview",
+        tab: "vitals",
         run: () => {
           setAnomaly((prev) =>
             prev
@@ -699,7 +708,9 @@ export function PulseProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!demoActive) return;
     clearDemoTimer();
-    const delay = demoIndex === 4 || demoIndex === 5 ? 5500 : 4200;
+    // Give vitals / AI / recover beats more dwell so scroll + reading keep up.
+    const longBeat = demoIndex >= 3 && demoIndex <= 6;
+    const delay = longBeat ? 6200 : 4200;
     demoTimer.current = window.setTimeout(() => nextDemoStep(), delay);
     return clearDemoTimer;
   }, [demoActive, demoIndex, nextDemoStep, clearDemoTimer]);

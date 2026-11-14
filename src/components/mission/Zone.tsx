@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import type { FocusZone } from "@/lib/pulse/store";
 import { usePulse } from "@/lib/pulse/store";
 
@@ -20,9 +21,24 @@ export function Zone({
 }) {
   const { focusZone, demoActive } = usePulse();
   const active = demoActive && focusZone === id;
+  const ref = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!active || !ref.current) return;
+    const node = ref.current;
+    const frame = window.requestAnimationFrame(() => {
+      node.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [active, id]);
 
   return (
     <Tag
+      ref={ref as never}
       className={`zone ${className} ${active ? "zone-focus" : ""}`}
       data-zone={id}
       data-focus={active ? "true" : "false"}
