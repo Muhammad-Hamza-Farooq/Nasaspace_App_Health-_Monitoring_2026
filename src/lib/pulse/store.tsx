@@ -29,7 +29,14 @@ import {
   type LinkState,
 } from "@/lib/los";
 import {
+  ANOMALY_PRESETS,
+  buildAnomaly,
+  type ActiveAnomaly,
+  type AnomalyKind,
+} from "@/lib/mission/interventions";
+import {
   appendReceipt,
+  createReceipt,
   loadReceipts,
   type Receipt,
 } from "@/lib/receipts";
@@ -53,13 +60,7 @@ export type TabId =
   | "behavioral"
   | "rules";
 
-export type DemoStep = {
-  id: string;
-  title: string;
-  caption: string;
-  tab: TabId;
-  run: () => void;
-};
+export type OpsMode = "ONLINE_EARTH" | "OFFLINE_LOCAL";
 
 type HistoryMap = Record<string, TelemetryPoint[]>;
 
@@ -79,6 +80,7 @@ type PulseState = {
   selectedHistory: TelemetryPoint[];
   link: LinkState;
   setLink: (s: LinkState) => void;
+  opsMode: OpsMode;
   queue: Escalation[];
   receipts: Receipt[];
   thresholds: Thresholds;
@@ -90,6 +92,10 @@ type PulseState = {
   setMoodCheckIn: (score: number) => void;
   escalateSelected: () => void;
   judgeTour: () => { ok: boolean; steps: string[] };
+  anomaly: ActiveAnomaly | null;
+  triggerAnomaly: (crewId: string, kind: AnomalyKind) => void;
+  applyIntervention: (id: string) => void;
+  applyAllInterventions: () => void;
   demoActive: boolean;
   demoIndex: number;
   demoCaption: string;
@@ -97,6 +103,7 @@ type PulseState = {
   startDemo: () => void;
   stopDemo: () => void;
   nextDemoStep: () => void;
+  missionLog: { id: string; text: string }[];
 };
 
 const PulseContext = createContext<PulseState | null>(null);
@@ -105,12 +112,46 @@ function emptyHistory(): HistoryMap {
   return Object.fromEntries(CREW.map((c) => [c.id, [] as TelemetryPoint[]]));
 }
 
+function applyAnomalyToSnap(
+  snap: CrewSnapshot,
+  anomaly: ActiveAnomaly | null,
+  recoveryProgress: number,
+): CrewSnapshot {
+  if (!anomaly || anomaly.crewId !== snap.crewId) return snap;
+  const preset = ANOMALY_PRESETS[anomaly.kind];
+  const a = preset.vitals;
+  const blend = anomaly.recovering ? recoveryProgress : 0;
+  const mix = (abnormal: number, normal: number) =>
+    Math.round((abnormal * (1 - blend) + normal * blend) * 10) / 10;
+  const mixInt = (abnormal: number, normal: number) =>
+    Math.round(abnormal * (1 - blend) + normal * blend);
+
+  return {
+    ...snap,
+    vitals: {
+      hr: mixInt(a.hr, snap.vitals.hr as number),
+      spo2: mix(a.spo2, snap.vitals.spo2 as number),
+      tempC: mix(a.tempC, snap.vitals.tempC as number),
+      sbp: mixInt(a.sbp, snap.vitals.sbp as number),
+      dbp: mixInt(a.dbp, snap.vitals.dbp as number),
+    },
+    radiationMsvDay:
+      a.radiationMsvDay !== undefined
+        ? mix(a.radiationMsvDay, snap.radiationMsvDay)
+        : snap.radiationMsvDay,
+    co2MmHg:
+      a.co2MmHg !== undefined ? mix(a.co2MmHg, snap.co2MmHg) : snap.co2MmHg,
+    mood: a.mood !== undefined ? mix(a.mood, snap.mood) : snap.mood,
+  };
+}
+
 export function PulseProvider({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<TabId>("overview");
   const [tick, setTick] = useState(0);
   const [stormActive, setStormActive] = useState(false);
   const [selectedCrewId, setSelectedCrewId] = useState(CREW[0].id);
   const [link, setLinkState] = useState<LinkState>("AOS");
+  const [opsMode, setOpsMode] = useState<OpsMode>("ONLINE_EARTH");
   const [queue, setQueue] = useState<Escalation[]>([]);
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [thresholds, setThresholds] = useState<Thresholds>(DEFAULT_THRESHOLDS);
@@ -118,6 +159,14 @@ export function PulseProvider({ children }: { children: ReactNode }) {
   const [moodScore, setMoodScore] = useState(6.5);
   const [hydrated, setHydrated] = useState(false);
   const [history, setHistory] = useState<HistoryMap>(emptyHistory);
+  const [anomaly, setAnomaly] = useState<ActiveAnomaly | null>(null);
+  const [recoveryProgress, setRecoveryProgress] = useState(0);
+  const [missionLog, setMissionLog] = useState<{ id: string; text: string }[]>([
+    {
+      id: "boot",
+      text: "PULSE online — Earth medical channel nominal.",
+    },
+  ]);
   const [demoActive, setDemoActive] = useState(false);
   const [demoIndex, setDemoIndex] = useState(0);
   const [demoCaption, setDemoCaption] = useState("");
@@ -125,12 +174,25 @@ export function PulseProvider({ children }: { children: ReactNode }) {
   const demoTimer = useRef<number | null>(null);
 
   const stormBoost = stormActive ? 1 : 0;
-  const snapshots = useMemo(
+  const baseSnapshots = useMemo(
     () => allCrewSnapshots(tick, stormBoost),
     [tick, stormBoost],
   );
-  const selectedSnap = snapshots.find((s) => s.crewId === selectedCrewId) ?? snapshots[0];
+  const snapshots = useMemo(
+    () =>
+      baseSnapshots.map((s) => applyAnomalyToSnap(s, anomaly, recoveryProgress)),
+    [baseSnapshots, anomaly, recoveryProgress],
+  );
+  const selectedSnap =
+    snapshots.find((s) => s.crewId === selectedCrewId) ?? snapshots[0];
   const selectedHistory = history[selectedCrewId] ?? [];
+
+  const pushLog = useCallback((line: string) => {
+    const id = `log_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    setMissionLog((prev) =>
+      [{ id, text: `${new Date().toLocaleTimeString()} — ${line}` }, ...prev].slice(0, 40),
+    );
+  }, []);
 
   useEffect(() => {
     setLinkState(loadLinkState());
@@ -142,11 +204,26 @@ export function PulseProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    const id = window.setInterval(() => setTick((t) => t + 1), 1200);
+    const id = window.setInterval(() => setTick((t) => t + 1), 1100);
     return () => window.clearInterval(id);
   }, [hydrated]);
 
-  // Append telemetry history each tick
+  // Recovery lerp toward normal after interventions
+  useEffect(() => {
+    if (!anomaly?.recovering) return;
+    if (recoveryProgress >= 1) {
+      setAnomaly(null);
+      setRecoveryProgress(0);
+      pushLog("Vitals returned to mission-normal band.");
+      return;
+    }
+    const id = window.setTimeout(
+      () => setRecoveryProgress((p) => Math.min(1, p + 0.22)),
+      900,
+    );
+    return () => window.clearTimeout(id);
+  }, [anomaly, recoveryProgress, pushLog]);
+
   useEffect(() => {
     if (!hydrated) return;
     setHistory((prev) => {
@@ -165,8 +242,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
           exerciseMin: snap.exerciseMin,
           mood: snap.mood,
         };
-        const series = [...(next[snap.crewId] ?? []), point].slice(-HISTORY_LEN);
-        next[snap.crewId] = series;
+        next[snap.crewId] = [...(next[snap.crewId] ?? []), point].slice(-HISTORY_LEN);
       }
       return next;
     });
@@ -193,20 +269,47 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     setReceipts(nextReceipts);
   }, [tick, hydrated, selectedCrewId, snapshots, thresholds]);
 
-  const setLink = useCallback((s: LinkState) => {
-    if (s === "AOS") {
-      flushQueueOnAos();
-      setQueue(loadQueue());
-      setReceipts(loadReceipts());
-    } else {
-      saveLinkState("LOS");
-    }
-    setLosLink(s);
-    setLinkState(s);
-  }, []);
+  const setLink = useCallback(
+    (s: LinkState) => {
+      if (s === "AOS") {
+        flushQueueOnAos();
+        setQueue(loadQueue());
+        setReceipts(loadReceipts());
+        setOpsMode("ONLINE_EARTH");
+        pushLog("AOS restored — syncing queued escalations to Earth surgeons.");
+      } else {
+        saveLinkState("LOS");
+        setOpsMode("OFFLINE_LOCAL");
+        pushLog("LOS — Earth medical link lost. Switching to offline local AI.");
+      }
+      setLosLink(s);
+      setLinkState(s);
+    },
+    [pushLog],
+  );
 
-  const setStorm = useCallback((on: boolean) => setStormActive(on), []);
-  const toggleStorm = useCallback(() => setStormActive((v) => !v), []);
+  const setStorm = useCallback(
+    (on: boolean) => {
+      setStormActive(on);
+      pushLog(
+        on
+          ? "Environmental anomaly: dust storm / SPE signature rising."
+          : "Storm signature decaying — radiation channel easing.",
+      );
+    },
+    [pushLog],
+  );
+  const toggleStorm = useCallback(() => {
+    setStormActive((v) => {
+      const next = !v;
+      pushLog(
+        next
+          ? "Environmental anomaly: dust storm / SPE signature rising."
+          : "Storm signature decaying — radiation channel easing.",
+      );
+      return next;
+    });
+  }, [pushLog]);
 
   const updateThreshold = useCallback((key: keyof Thresholds, value: number) => {
     setThresholds((prev) => {
@@ -263,6 +366,86 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     void syncReceiptToSupabase(receipt);
   }, [selectedCrewId, stormActive]);
 
+  const triggerAnomaly = useCallback(
+    (crewId: string, kind: AnomalyKind) => {
+      const next = buildAnomaly(crewId, kind);
+      setAnomaly(next);
+      setRecoveryProgress(0);
+      setSelectedCrewId(crewId);
+      setTab("vitals");
+      pushLog(`Anomaly on ${crewId}: ${next.title}`);
+      const receipt = createReceipt({
+        kind: "engine",
+        channel: "vitals",
+        summary: `Anomaly detected — ${next.title}`,
+        payload: { crewId, kind },
+      });
+      setReceipts(appendReceipt(receipt));
+      if (opsMode === "OFFLINE_LOCAL" || link === "LOS") {
+        enqueueEscalation(
+          {
+            crewId,
+            severity: "urgent",
+            message: `OFFLINE AI: ${next.title} — awaiting local interventions`,
+          },
+          "LOS",
+        );
+        setQueue(loadQueue());
+      }
+    },
+    [link, opsMode, pushLog],
+  );
+
+  const applyIntervention = useCallback(
+    (id: string) => {
+      setAnomaly((prev) => {
+        if (!prev) return prev;
+        if (prev.applied.includes(id)) return prev;
+        const applied = [...prev.applied, id];
+        const item = prev.interventions.find((i) => i.id === id);
+        pushLog(`Local AI action: ${item?.label ?? id}`);
+        const receipt = createReceipt({
+          kind: "engine",
+          channel: "ai-action",
+          summary: `Applied intervention: ${item?.label ?? id}`,
+          payload: { interventionId: id, crewId: prev.crewId },
+        });
+        setReceipts(appendReceipt(receipt));
+        const allDone = applied.length >= prev.interventions.length;
+        if (allDone) {
+          pushLog("All recommended actions applied — beginning vital recovery.");
+        }
+        return { ...prev, applied, recovering: allDone ? true : prev.recovering };
+      });
+    },
+    [pushLog],
+  );
+
+  const applyAllInterventions = useCallback(() => {
+    setAnomaly((prev) => {
+      if (!prev) return prev;
+      const applied = prev.interventions.map((i) => i.id);
+      for (const i of prev.interventions) {
+        if (!prev.applied.includes(i.id)) {
+          pushLog(`Local AI action: ${i.label}`);
+          setReceipts(
+            appendReceipt(
+              createReceipt({
+                kind: "engine",
+                channel: "ai-action",
+                summary: `Applied intervention: ${i.label}`,
+                payload: { interventionId: i.id, crewId: prev.crewId },
+              }),
+            ),
+          );
+        }
+      }
+      pushLog("All recommended actions applied — beginning vital recovery.");
+      return { ...prev, applied, recovering: true };
+    });
+    setRecoveryProgress(0.05);
+  }, [pushLog]);
+
   const judgeTour = useCallback(() => {
     const steps: string[] = [];
     setTab("overview");
@@ -271,6 +454,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     steps.push("storm-on");
     setLosLink("LOS");
     setLinkState("LOS");
+    setOpsMode("OFFLINE_LOCAL");
     enqueueEscalation(
       {
         crewId: selectedCrewId,
@@ -282,6 +466,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     steps.push("los-queued");
     flushQueueOnAos();
     setLinkState("AOS");
+    setOpsMode("ONLINE_EARTH");
     setQueue(loadQueue());
     setReceipts(loadReceipts());
     steps.push("aos-flush");
@@ -298,82 +483,106 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  type DemoStep = {
+    id: string;
+    title: string;
+    caption: string;
+    tab: TabId;
+    run: () => void;
+  };
+
   const demoSteps: DemoStep[] = useMemo(
     () => [
       {
-        id: "intro",
-        title: "Mission console",
+        id: "cruise",
+        title: "Deep-space transit",
         caption:
-          "PULSE live dashboard — four crew, hazard-grouped channels, receipted engines.",
+          "Crew in cruise. Earth AI + flight surgeons ONLINE. Vitals in normal band.",
         tab: "overview",
         run: () => {
+          setAnomaly(null);
+          setRecoveryProgress(0);
           setStormActive(false);
           setLink("AOS");
+          setOpsMode("ONLINE_EARTH");
+          pushLog("Mission demo start — Earth medical channel ONLINE.");
         },
       },
       {
-        id: "vitals",
-        title: "Vitals figures",
-        caption: "Interactive HR / SpO₂ / BP streams for the selected crew member.",
-        tab: "vitals",
-        run: () => setSelectedCrewId(CREW[0].id),
-      },
-      {
         id: "storm",
-        title: "Solar storm replay",
-        caption: "DONKI-style SPE boost — watch radiation dose climb on the chart.",
+        title: "Anomaly: dust storm / SPE",
+        caption:
+          "External anomaly detected. Radiation and environmental stress climbing.",
         tab: "radiation",
-        run: () => setStormActive(true),
+        run: () => setStorm(true),
       },
       {
         id: "los",
-        title: "LOS store-forward",
-        caption: "Earth link lost. Escalation queues as QUEUED-FS for the flight surgeon.",
+        title: "Earth link lost",
+        caption:
+          "Connection to Earth doctors/surgeons drops. PULSE switches to OFFLINE local AI.",
         tab: "overview",
+        run: () => setLink("LOS"),
+      },
+      {
+        id: "vitals-anomaly",
+        title: "Crew vital anomaly",
+        caption:
+          "Local AI flags Nova Reyes — tachycardia under storm stress. Suggestions ready.",
+        tab: "vitals",
+        run: () => triggerAnomaly("nova", "tachycardia"),
+      },
+      {
+        id: "act",
+        title: "AI actions applied",
+        caption:
+          "Offline AI executes rest, fluids, and tighter HR watch — without Earth.",
+        tab: "vitals",
+        run: () => applyAllInterventions(),
+      },
+      {
+        id: "recover",
+        title: "Vitals normalizing",
+        caption:
+          "After local actions, numbers trend back to mission-normal.",
+        tab: "vitals",
         run: () => {
-          setLink("LOS");
-          enqueueEscalation(
-            {
-              crewId: selectedCrewId,
-              severity: "urgent",
-              message: "Demo Mode: SPE medical escalate while LOS",
-            },
-            "LOS",
+          setAnomaly((prev) =>
+            prev ? { ...prev, recovering: true, applied: prev.interventions.map((i) => i.id) } : prev,
           );
-          setQueue(loadQueue());
-          setReceipts(loadReceipts());
+          setRecoveryProgress((p) => Math.max(p, 0.35));
+          pushLog("Recovery in progress — trending to normal vitals.");
         },
       },
       {
         id: "aos",
-        title: "AOS flush",
-        caption: "Link restored. Queue flushes with sync receipts.",
+        title: "Earth link restored",
+        caption:
+          "AOS returns. Offline receipts and escalations sync to Earth surgeons.",
         tab: "overview",
-        run: () => setLink("AOS"),
-      },
-      {
-        id: "blind",
-        title: "BLIND quality gate",
-        caption: "Bad sensor sample refused — no invented vitals pass the gate.",
-        tab: "vitals",
-        run: () => injectBadSample(),
-      },
-      {
-        id: "mood",
-        title: "Behavioral check-in",
-        caption: "Isolation hazard channel — mood score written with a receipt.",
-        tab: "behavioral",
-        run: () => setMoodCheckIn(4.5),
+        run: () => {
+          setStorm(false);
+          setLink("AOS");
+          setAnomaly(null);
+          setRecoveryProgress(0);
+        },
       },
       {
         id: "sources",
-        title: "Nineteen citations",
-        caption: "Official challenge resources 21–25 listed first for eligibility.",
+        title: "Cited & receipted",
+        caption:
+          "Nineteen sources remain open — official challenge resources first.",
         tab: "rules",
-        run: () => setStormActive(false),
+        run: () => pushLog("Mission demo complete."),
       },
     ],
-    [injectBadSample, selectedCrewId, setLink, setMoodCheckIn],
+    [
+      applyAllInterventions,
+      pushLog,
+      setLink,
+      setStorm,
+      triggerAnomaly,
+    ],
   );
 
   const applyDemoStep = useCallback(
@@ -381,8 +590,10 @@ export function PulseProvider({ children }: { children: ReactNode }) {
       const step = demoSteps[index];
       if (!step) {
         setDemoActive(false);
-        setDemoTitle("Demo complete");
-        setDemoCaption("Judge tour path finished. Explore any panel freely.");
+        setDemoTitle("Mission complete");
+        setDemoCaption(
+          "Offline local AI kept the crew safe until Earth link returned.",
+        );
         return;
       }
       setDemoIndex(index);
@@ -406,8 +617,10 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     const next = demoIndex + 1;
     if (next >= demoSteps.length) {
       stopDemo();
-      setDemoTitle("Demo complete");
-      setDemoCaption("Judge tour path finished. Explore any panel freely.");
+      setDemoTitle("Mission complete");
+      setDemoCaption(
+        "Offline local AI kept the crew safe until Earth link returned.",
+      );
       return;
     }
     applyDemoStep(next);
@@ -419,13 +632,11 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     applyDemoStep(0);
   }, [applyDemoStep, clearDemoTimer]);
 
-  // Auto-advance demo every 4.5s while active
   useEffect(() => {
     if (!demoActive) return;
     clearDemoTimer();
-    demoTimer.current = window.setTimeout(() => {
-      nextDemoStep();
-    }, 4500);
+    const delay = demoIndex === 4 || demoIndex === 5 ? 5500 : 4200;
+    demoTimer.current = window.setTimeout(() => nextDemoStep(), delay);
     return clearDemoTimer;
   }, [demoActive, demoIndex, nextDemoStep, clearDemoTimer]);
 
@@ -445,6 +656,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     selectedHistory,
     link,
     setLink,
+    opsMode,
     queue,
     receipts,
     thresholds,
@@ -456,6 +668,10 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     setMoodCheckIn,
     escalateSelected,
     judgeTour,
+    anomaly,
+    triggerAnomaly,
+    applyIntervention,
+    applyAllInterventions,
     demoActive,
     demoIndex,
     demoCaption,
@@ -463,6 +679,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     startDemo,
     stopDemo,
     nextDemoStep,
+    missionLog,
   };
 
   return <PulseContext.Provider value={value}>{children}</PulseContext.Provider>;

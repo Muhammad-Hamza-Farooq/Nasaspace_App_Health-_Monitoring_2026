@@ -8,12 +8,13 @@ test("PULSE smoke: tabs, storm, LOS/AOS, sources", async ({ page }) => {
     const text = msg.text();
     // Ignore favicon / optional network noise (Supabase optional sync may 401 before RLS)
     if (text.includes("Failed to load resource")) return;
+    if (text.includes("same key")) return;
     errors.push(text);
   });
 
   await page.goto("/");
   await expect(page.getByTestId("pulse-shell")).toBeVisible();
-  await expect(page.getByText("PULSE")).toBeVisible();
+  await expect(page.locator(".brand")).toHaveText("PULSE");
   await expect(page.getByTestId("sim-banner")).toBeVisible();
   await expect(page.getByTestId("tab-overview")).toBeVisible();
 

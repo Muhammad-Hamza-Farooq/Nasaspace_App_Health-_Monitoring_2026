@@ -15,19 +15,17 @@ export function DemoOverlay() {
     nextDemoStep,
   } = usePulse();
 
-  if (!demoActive && !demoTitle) {
-    return null;
-  }
+  if (!demoActive && !demoTitle) return null;
 
-  if (!demoActive && demoTitle === "Demo complete") {
+  if (!demoActive && (demoTitle === "Mission complete" || demoTitle === "Demo complete")) {
     return (
       <div className="demo-bar done" data-testid="demo-complete">
         <div>
           <strong>{demoTitle}</strong>
           <p>{demoCaption}</p>
         </div>
-        <button type="button" className="btn" onClick={startDemo}>
-          Replay demo
+        <button type="button" className="btn accent" onClick={startDemo}>
+          Replay mission
         </button>
       </div>
     );
@@ -39,7 +37,7 @@ export function DemoOverlay() {
     <div className="demo-bar" data-testid="demo-overlay" role="status">
       <div className="demo-progress">
         <span>
-          DEMO {demoIndex + 1}/{TOTAL_STEPS}
+          MISSION {demoIndex + 1}/{TOTAL_STEPS}
         </span>
         <div className="demo-track">
           <div

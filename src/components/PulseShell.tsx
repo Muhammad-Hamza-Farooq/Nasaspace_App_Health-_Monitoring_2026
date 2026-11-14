@@ -2,17 +2,20 @@
 
 import { DemoOverlay } from "@/components/DemoOverlay";
 import { SimBanner } from "@/components/SimBanner";
+import { AiAdvisorPanel } from "@/components/mission/AiAdvisorPanel";
+import { CrewRail } from "@/components/mission/CrewRail";
+import { EarthLinkPanel } from "@/components/mission/EarthLinkPanel";
+import { HeroTelemetry } from "@/components/mission/HeroTelemetry";
 import { BehavioralTab } from "@/components/tabs/BehavioralTab";
 import { CountermeasuresTab } from "@/components/tabs/CountermeasuresTab";
 import { EnvironmentTab } from "@/components/tabs/EnvironmentTab";
-import { OverviewTab } from "@/components/tabs/OverviewTab";
 import { RadiationTab } from "@/components/tabs/RadiationTab";
 import { RulesSourcesTab } from "@/components/tabs/RulesSourcesTab";
 import { VitalsTab } from "@/components/tabs/VitalsTab";
 import { PulseProvider, usePulse, type TabId } from "@/lib/pulse/store";
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: "overview", label: "Overview" },
+  { id: "overview", label: "Floor" },
   { id: "vitals", label: "Vitals" },
   { id: "radiation", label: "Radiation" },
   { id: "environment", label: "Environment" },
@@ -25,26 +28,48 @@ function ShellInner() {
   const {
     tab,
     setTab,
-    link,
-    stormActive,
     tick,
-    selectedSnap,
-    queue,
-    receipts,
+    stormActive,
+    opsMode,
+    link,
     startDemo,
     demoActive,
-    judgeTour,
+    toggleStorm,
+    escalateSelected,
+    injectBadSample,
   } = usePulse();
 
-  const queued = queue.filter((q) => q.status === "QUEUED-FS").length;
-
   return (
-    <div className={`shell ${demoActive ? "demo-on" : ""}`} data-testid="pulse-shell">
-      <header className="topbar">
+    <div className={`mission-screen ${demoActive ? "demo-on" : ""}`} data-testid="pulse-shell">
+      <header className="mission-top">
         <div className="brand-block">
           <p className="brand">PULSE</p>
-          <p className="tagline">Interactive astronaut health dashboard</p>
+          <p className="tagline">Mission health floor — gather · evaluate · act</p>
         </div>
+
+        <div className="mission-status-band">
+          <div className="ms-item">
+            <span>SOL</span>
+            <strong>{140 + Math.floor(tick / 20)}</strong>
+          </div>
+          <div className="ms-item">
+            <span>EARTH</span>
+            <strong className={opsMode === "ONLINE_EARTH" ? "ok" : "warn"}>
+              {opsMode === "ONLINE_EARTH" ? "SURGEONS ONLINE" : "LOCAL AI ONLY"}
+            </strong>
+          </div>
+          <div className="ms-item">
+            <span>LINK</span>
+            <strong className={link === "LOS" ? "warn" : "ok"}>{link}</strong>
+          </div>
+          <div className="ms-item">
+            <span>ANOMALY WX</span>
+            <strong className={stormActive ? "warn" : ""}>
+              {stormActive ? "DUST/SPE" : "CLEAR"}
+            </strong>
+          </div>
+        </div>
+
         <div className="top-actions">
           <button
             type="button"
@@ -52,58 +77,33 @@ function ShellInner() {
             data-testid="demo-mode-btn"
             onClick={startDemo}
           >
-            {demoActive ? "Demo running…" : "Demo Mode"}
+            {demoActive ? "Mission running…" : "Mission Demo"}
+          </button>
+          <button
+            type="button"
+            className={stormActive ? "btn danger" : "btn"}
+            data-testid="storm-toggle"
+            onClick={toggleStorm}
+          >
+            {stormActive ? "Storm ON" : "Trigger storm"}
+          </button>
+          <button type="button" className="btn" data-testid="escalate-btn" onClick={escalateSelected}>
+            Escalate
           </button>
           <button
             type="button"
             className="btn ghost"
             data-testid="judge-tour"
-            onClick={() => judgeTour()}
+            onClick={injectBadSample}
+            title="Also available in Vitals"
           >
-            Judge tour
+            BLIND test
           </button>
         </div>
       </header>
 
       <SimBanner />
       <DemoOverlay />
-
-      <div className="ops-rail" data-testid="ops-rail">
-        <div className="ops-chip">
-          <span>SOL</span>
-          <strong>{140 + Math.floor(tick / 20)}</strong>
-        </div>
-        <div className="ops-chip">
-          <span>LINK</span>
-          <strong
-            className={link === "LOS" ? "warn" : "ok"}
-            data-testid="status-link"
-          >
-            LINK {link}
-          </strong>
-        </div>
-        <div className="ops-chip">
-          <span>WX</span>
-          <strong
-            className={stormActive ? "warn" : ""}
-            data-testid="status-storm"
-          >
-            {stormActive ? "STORM" : "QUIET"}
-          </strong>
-        </div>
-        <div className="ops-chip">
-          <span>CREW</span>
-          <strong>{selectedSnap?.name.split(" ")[0] ?? "—"}</strong>
-        </div>
-        <div className="ops-chip">
-          <span>QUEUE</span>
-          <strong>{queued}</strong>
-        </div>
-        <div className="ops-chip">
-          <span>RCPT</span>
-          <strong>{receipts.length}</strong>
-        </div>
-      </div>
 
       <nav className="tab-nav" aria-label="PULSE sections" data-testid="tab-nav">
         {TABS.map((t) => (
@@ -119,15 +119,24 @@ function ShellInner() {
         ))}
       </nav>
 
-      <main className="main">
-        {tab === "overview" && <OverviewTab />}
-        {tab === "vitals" && <VitalsTab />}
-        {tab === "radiation" && <RadiationTab />}
-        {tab === "environment" && <EnvironmentTab />}
-        {tab === "countermeasures" && <CountermeasuresTab />}
-        {tab === "behavioral" && <BehavioralTab />}
-        {tab === "rules" && <RulesSourcesTab />}
-      </main>
+      <div className="mission-grid">
+        <CrewRail />
+
+        <main className="mission-center">
+          {tab === "overview" && <HeroTelemetry />}
+          {tab === "vitals" && <VitalsTab />}
+          {tab === "radiation" && <RadiationTab />}
+          {tab === "environment" && <EnvironmentTab />}
+          {tab === "countermeasures" && <CountermeasuresTab />}
+          {tab === "behavioral" && <BehavioralTab />}
+          {tab === "rules" && <RulesSourcesTab />}
+        </main>
+
+        <div className="mission-right">
+          <EarthLinkPanel />
+          <AiAdvisorPanel />
+        </div>
+      </div>
     </div>
   );
 }
