@@ -412,12 +412,22 @@ export function PulseProvider({ children }: { children: ReactNode }) {
       setRecoveryProgress(0);
       setSelectedCrewId(crewId);
       pushLog(`${next.problemLabel} on ${crewId}`);
-      pushLog(`Local AI advising from citations. ${next.datasetNote}`);
+      pushLog(`What happened: ${next.assessment.whatHappened}`);
+      pushLog(
+        `AI reason (${next.assessment.citationCheck.label}): ${next.assessment.aiReason}`,
+      );
       const receipt = createReceipt({
         kind: "engine",
         channel: "vitals",
         summary: `Anomaly detected: ${next.title}`,
-        payload: { crewId, kind, citations: next.interventions.map((i) => i.citation.id) },
+        payload: {
+          crewId,
+          kind,
+          whatHappened: next.assessment.whatHappened,
+          aiReason: next.assessment.aiReason,
+          citationVerdict: next.assessment.citationCheck.verdict,
+          citations: next.assessment.citationCheck.citations.map((c) => c.id),
+        },
       });
       setReceipts(appendReceipt(receipt));
       if (opsMode === "OFFLINE_LOCAL" || link === "LOS") {
@@ -645,14 +655,17 @@ export function PulseProvider({ children }: { children: ReactNode }) {
       },
       {
         id: "ai-advise",
-        title: "Local AI analyzes",
+        title: "Local AI analyzes cause",
         caption:
-          "Offline model names the problem and lists cited procedures only — no free advice without a source ID.",
-        lookAt: "Look at E Local AI: problem, citations, Apply. Device strip shows laptop + model.",
+          "Local AI states what happened to Nova, its hypothesized reason, then checks whether citations support that reason — honest: supported, partial, or not confirmed.",
+        lookAt: "Look at E: What happened · AI reason · Citation check, then Apply.",
         focus: "ai",
         tab: "overview",
-        delayMs: 7000,
-        run: () => pushLog("Local AI presenting cited standing orders."),
+        delayMs: 8500,
+        run: () =>
+          pushLog(
+            "Local AI: patient event + hypothesized cause + citation verdict.",
+          ),
       },
       {
         id: "crew-apply",

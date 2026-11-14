@@ -1,5 +1,6 @@
 "use client";
 
+import { CREW } from "@/data/crew";
 import { LOCAL_MODEL_POSTURE } from "@/lib/mission/interventions";
 import { usePulse } from "@/lib/pulse/store";
 
@@ -21,6 +22,17 @@ export function AiAdvisorPanel() {
         normalized: "Vitals normalized",
       }[anomaly.phase]
     : null;
+
+  const patientName =
+    anomaly && CREW.find((c) => c.id === anomaly.crewId)?.name;
+
+  const verdictClass = anomaly
+    ? {
+        supported: "verdict-supported",
+        partial: "verdict-partial",
+        unsupported: "verdict-unsupported",
+      }[anomaly.assessment.citationCheck.verdict]
+    : "";
 
   return (
     <div className="side-panel ai-panel" data-testid="ai-advisor">
@@ -68,8 +80,48 @@ export function AiAdvisorPanel() {
               {phaseLabel}
             </p>
             <strong>{anomaly.title}</strong>
+            {patientName ? (
+              <p className="patient-line" data-testid="anomaly-patient">
+                Patient: {patientName}
+              </p>
+            ) : null}
           </div>
           <p className="problem-line">{anomaly.problemLabel}</p>
+
+          <div className="assessment-block" data-testid="cause-assessment">
+            <div className="assess-row">
+              <span className="assess-label">What happened</span>
+              <p data-testid="what-happened">{anomaly.assessment.whatHappened}</p>
+            </div>
+            <div className="assess-row">
+              <span className="assess-label">AI reason</span>
+              <p data-testid="ai-reason">{anomaly.assessment.aiReason}</p>
+            </div>
+            <div
+              className={`assess-row citation-verdict ${verdictClass}`}
+              data-testid="citation-verdict"
+            >
+              <span className="assess-label">Citation check</span>
+              <p className="verdict-label">
+                {anomaly.assessment.citationCheck.label}
+              </p>
+              <p data-testid="citation-explanation">
+                {anomaly.assessment.citationCheck.explanation}
+              </p>
+              <div className="verdict-cites">
+                {anomaly.assessment.citationCheck.citations.map((c) => (
+                  <span
+                    key={c.id}
+                    className="cite-chip"
+                    title={c.source}
+                  >
+                    {c.id}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <p className="anomaly-summary">{anomaly.summary}</p>
 
           <ul className="action-list">

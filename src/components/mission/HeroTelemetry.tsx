@@ -86,6 +86,28 @@ export function HeroTelemetry() {
         </div>
       </header>
 
+      {anomaly?.crewId === selectedSnap.crewId && (
+        <div className="floor-assessment" data-testid="floor-assessment">
+          <p className="assess-label">What happened to this crew</p>
+          <p>{anomaly.assessment.whatHappened}</p>
+          <p className="assess-label">AI reason (citation-checked)</p>
+          <p>
+            {anomaly.assessment.aiReason}{" "}
+            <span
+              className={`floor-verdict ${
+                anomaly.assessment.citationCheck.verdict === "supported"
+                  ? "ok"
+                  : anomaly.assessment.citationCheck.verdict === "partial"
+                    ? "warn"
+                    : "alert"
+              }`}
+            >
+              {anomaly.assessment.citationCheck.label}
+            </span>
+          </p>
+        </div>
+      )}
+
       <div className="gauge-row">
         <GaugeBar
           label="HR vs max"

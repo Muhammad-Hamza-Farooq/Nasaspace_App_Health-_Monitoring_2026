@@ -464,6 +464,116 @@ body {
   color: var(--muted) !important;
 }
 
+.patient-line {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #ff8a6a;
+  letter-spacing: 0.04em;
+}
+
+.assessment-block {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.assess-row {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.assess-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.assess-row p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.citation-verdict .verdict-label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem !important;
+  font-weight: 600;
+}
+
+.verdict-cites {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.15rem;
+}
+
+.verdict-supported {
+  border-color: rgba(61, 220, 151, 0.45);
+  background: rgba(61, 220, 151, 0.08);
+}
+
+.verdict-supported .verdict-label {
+  color: #3ddc97;
+}
+
+.verdict-partial {
+  border-color: rgba(240, 162, 2, 0.5);
+  background: rgba(240, 162, 2, 0.1);
+}
+
+.verdict-partial .verdict-label {
+  color: #f0a202;
+}
+
+.verdict-unsupported {
+  border-color: rgba(228, 87, 46, 0.5);
+  background: rgba(228, 87, 46, 0.1);
+}
+
+.verdict-unsupported .verdict-label {
+  color: #e4572e;
+}
+
+.floor-assessment {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(240, 162, 2, 0.4);
+  background: rgba(240, 162, 2, 0.06);
+}
+
+.floor-assessment p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.floor-verdict {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+.floor-verdict.ok {
+  color: #3ddc97;
+}
+
+.floor-verdict.warn {
+  color: #f0a202;
+}
+
+.floor-verdict.alert {
+  color: #e4572e;
+}
+
 .model-posture summary {
   cursor: pointer;
   list-style: none;
