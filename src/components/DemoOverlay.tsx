@@ -10,6 +10,7 @@ export function DemoOverlay() {
     demoIndex,
     demoTitle,
     demoCaption,
+    demoLookAt,
     startDemo,
     stopDemo,
     nextDemoStep,
@@ -34,7 +35,7 @@ export function DemoOverlay() {
   if (!demoActive) return null;
 
   return (
-    <div className="demo-bar" data-testid="demo-overlay" role="status">
+    <div className="demo-bar" data-testid="demo-overlay" role="status" aria-live="polite">
       <div className="demo-progress">
         <span>
           MISSION {demoIndex + 1}/{TOTAL_STEPS}
@@ -49,6 +50,9 @@ export function DemoOverlay() {
       <div className="demo-copy">
         <strong data-testid="demo-title">{demoTitle}</strong>
         <p data-testid="demo-caption">{demoCaption}</p>
+        <p className="demo-look" data-testid="demo-look">
+          {demoLookAt}
+        </p>
       </div>
       <div className="demo-actions">
         <button type="button" className="btn" data-testid="demo-next" onClick={nextDemoStep}>

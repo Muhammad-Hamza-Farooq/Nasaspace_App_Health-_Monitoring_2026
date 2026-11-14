@@ -10,6 +10,7 @@
 | Decisions | `DECISIONS.md` |
 | Constraints | `CONSTRAINTS.md` |
 | Assumptions | `docs/reference/ASSUMPTIONS_AND_OPEN_QUESTIONS.md` |
+| UI/UX rules | `docs/reference/UI_UX_RULES.md` |
 | Kit README | `docs/kit/README.md` |
 | Citations | `docs/kit/SOURCES.md` |
 | Kit PDFs | `docs/kit/*.pdf` |

@@ -7,8 +7,7 @@ export function CrewRail() {
     usePulse();
 
   return (
-    <aside className="crew-rail" data-testid="crew-strip">
-      <h2>Crew</h2>
+    <div className="crew-rail" data-testid="crew-strip">
       {snapshots.map((s) => {
         const hot =
           anomaly?.crewId === s.crewId ||
@@ -43,6 +42,6 @@ export function CrewRail() {
           </button>
         );
       })}
-    </aside>
+    </div>
   );
 }

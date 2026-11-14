@@ -6,6 +6,7 @@ import { AiAdvisorPanel } from "@/components/mission/AiAdvisorPanel";
 import { CrewRail } from "@/components/mission/CrewRail";
 import { EarthLinkPanel } from "@/components/mission/EarthLinkPanel";
 import { HeroTelemetry } from "@/components/mission/HeroTelemetry";
+import { Zone } from "@/components/mission/Zone";
 import { BehavioralTab } from "@/components/tabs/BehavioralTab";
 import { CountermeasuresTab } from "@/components/tabs/CountermeasuresTab";
 import { EnvironmentTab } from "@/components/tabs/EnvironmentTab";
@@ -37,75 +38,83 @@ function ShellInner() {
     toggleStorm,
     escalateSelected,
     injectBadSample,
+    focusZone,
   } = usePulse();
 
   return (
     <div className={`mission-screen ${demoActive ? "demo-on" : ""}`} data-testid="pulse-shell">
-      <header className="mission-top">
-        <div className="brand-block">
-          <p className="brand">PULSE</p>
-          <p className="tagline">Mission health floor — gather · evaluate · act</p>
-        </div>
+      <Zone
+        id="strip"
+        code="A"
+        title="Mission strip"
+        className="zone-strip"
+        as="div"
+      >
+        <header className="mission-top">
+          <div className="brand-block">
+            <p className="brand">PULSE</p>
+            <p className="tagline">Mission health floor — gather · evaluate · act</p>
+          </div>
 
-        <div className="mission-status-band">
-          <div className="ms-item">
-            <span>SOL</span>
-            <strong>{140 + Math.floor(tick / 20)}</strong>
+          <div className="mission-status-band">
+            <div className="ms-item">
+              <span>SOL</span>
+              <strong>{140 + Math.floor(tick / 20)}</strong>
+            </div>
+            <div className="ms-item">
+              <span>EARTH</span>
+              <strong className={opsMode === "ONLINE_EARTH" ? "ok" : "warn"}>
+                {opsMode === "ONLINE_EARTH" ? "SURGEONS ONLINE" : "LOCAL AI ONLY"}
+              </strong>
+            </div>
+            <div className="ms-item">
+              <span>LINK</span>
+              <strong className={link === "LOS" ? "warn" : "ok"}>{link}</strong>
+            </div>
+            <div className="ms-item">
+              <span>ANOMALY WX</span>
+              <strong className={stormActive ? "warn" : ""}>
+                {stormActive ? "DUST/SPE" : "CLEAR"}
+              </strong>
+            </div>
           </div>
-          <div className="ms-item">
-            <span>EARTH</span>
-            <strong className={opsMode === "ONLINE_EARTH" ? "ok" : "warn"}>
-              {opsMode === "ONLINE_EARTH" ? "SURGEONS ONLINE" : "LOCAL AI ONLY"}
-            </strong>
-          </div>
-          <div className="ms-item">
-            <span>LINK</span>
-            <strong className={link === "LOS" ? "warn" : "ok"}>{link}</strong>
-          </div>
-          <div className="ms-item">
-            <span>ANOMALY WX</span>
-            <strong className={stormActive ? "warn" : ""}>
-              {stormActive ? "DUST/SPE" : "CLEAR"}
-            </strong>
-          </div>
-        </div>
 
-        <div className="top-actions">
-          <button
-            type="button"
-            className={demoActive ? "btn danger" : "btn accent"}
-            data-testid="demo-mode-btn"
-            onClick={startDemo}
-          >
-            {demoActive ? "Mission running…" : "Mission Demo"}
-          </button>
-          <button
-            type="button"
-            className={stormActive ? "btn danger" : "btn"}
-            data-testid="storm-toggle"
-            onClick={toggleStorm}
-          >
-            {stormActive ? "Storm ON" : "Trigger storm"}
-          </button>
-          <button type="button" className="btn" data-testid="escalate-btn" onClick={escalateSelected}>
-            Escalate
-          </button>
-          <button
-            type="button"
-            className="btn ghost"
-            data-testid="judge-tour"
-            onClick={injectBadSample}
-            title="Also available in Vitals"
-          >
-            BLIND test
-          </button>
-        </div>
-      </header>
+          <div className="top-actions">
+            <button
+              type="button"
+              className={demoActive ? "btn danger" : "btn accent"}
+              data-testid="demo-mode-btn"
+              onClick={startDemo}
+            >
+              {demoActive ? "Mission running…" : "Mission Demo"}
+            </button>
+            <button
+              type="button"
+              className={stormActive ? "btn danger" : "btn"}
+              data-testid="storm-toggle"
+              onClick={toggleStorm}
+            >
+              {stormActive ? "Storm ON" : "Trigger storm"}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              data-testid="escalate-btn"
+              onClick={escalateSelected}
+            >
+              Escalate
+            </button>
+            <button type="button" className="btn ghost" data-testid="judge-tour" onClick={injectBadSample}>
+              BLIND test
+            </button>
+          </div>
+        </header>
+      </Zone>
 
       <SimBanner />
       <DemoOverlay />
 
-      <nav className="tab-nav" aria-label="PULSE sections" data-testid="tab-nav">
+      <nav className="tab-nav" aria-label="Detail sections" data-testid="tab-nav">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -120,23 +129,37 @@ function ShellInner() {
       </nav>
 
       <div className="mission-grid">
-        <CrewRail />
+        <Zone id="crew" code="B" title="Crew rail" className="zone-crew" as="aside">
+          <CrewRail />
+        </Zone>
 
-        <main className="mission-center">
-          {tab === "overview" && <HeroTelemetry />}
-          {tab === "vitals" && <VitalsTab />}
-          {tab === "radiation" && <RadiationTab />}
-          {tab === "environment" && <EnvironmentTab />}
-          {tab === "countermeasures" && <CountermeasuresTab />}
-          {tab === "behavioral" && <BehavioralTab />}
-          {tab === "rules" && <RulesSourcesTab />}
-        </main>
+        <Zone id="floor" code="C" title="Live floor" className="zone-floor" as="div">
+          <main className="mission-center">
+            {tab === "overview" && <HeroTelemetry />}
+            {tab === "vitals" && <VitalsTab />}
+            {tab === "radiation" && <RadiationTab />}
+            {tab === "environment" && <EnvironmentTab />}
+            {tab === "countermeasures" && <CountermeasuresTab />}
+            {tab === "behavioral" && <BehavioralTab />}
+            {tab === "rules" && <RulesSourcesTab />}
+          </main>
+        </Zone>
 
         <div className="mission-right">
-          <EarthLinkPanel />
-          <AiAdvisorPanel />
+          <Zone id="earth" code="D" title="Earth medical link" className="zone-earth">
+            <EarthLinkPanel />
+          </Zone>
+          <Zone id="ai" code="E" title="Local AI advisor" className="zone-ai">
+            <AiAdvisorPanel />
+          </Zone>
         </div>
       </div>
+
+      {demoActive && focusZone !== "none" && (
+        <p className="focus-hint" aria-hidden="true">
+          Active zone highlighted with gold border
+        </p>
+      )}
     </div>
   );
 }

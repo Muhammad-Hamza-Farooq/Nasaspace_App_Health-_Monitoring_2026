@@ -12,10 +12,9 @@ export function AiAdvisorPanel() {
   } = usePulse();
 
   return (
-    <section className="side-panel ai-panel" data-testid="ai-advisor">
+    <div className="side-panel ai-panel" data-testid="ai-advisor">
       <header>
-        <h2>{opsMode === "OFFLINE_LOCAL" ? "Local AI advisor" : "Earth AI advisor"}</h2>
-        <p>
+        <p className="panel-sub">
           {opsMode === "OFFLINE_LOCAL"
             ? "Acting without Earth surgeons"
             : "Supervised by Earth medical channel"}
@@ -73,6 +72,6 @@ export function AiAdvisorPanel() {
           <li key={line.id}>{line.text}</li>
         ))}
       </ul>
-    </section>
+    </div>
   );
 }

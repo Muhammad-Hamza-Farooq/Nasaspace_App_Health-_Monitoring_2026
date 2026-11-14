@@ -62,6 +62,14 @@ export type TabId =
 
 export type OpsMode = "ONLINE_EARTH" | "OFFLINE_LOCAL";
 
+export type FocusZone =
+  | "strip"
+  | "crew"
+  | "floor"
+  | "earth"
+  | "ai"
+  | "none";
+
 type HistoryMap = Record<string, TelemetryPoint[]>;
 
 type PulseState = {
@@ -100,6 +108,8 @@ type PulseState = {
   demoIndex: number;
   demoCaption: string;
   demoTitle: string;
+  demoLookAt: string;
+  focusZone: FocusZone;
   startDemo: () => void;
   stopDemo: () => void;
   nextDemoStep: () => void;
@@ -171,6 +181,8 @@ export function PulseProvider({ children }: { children: ReactNode }) {
   const [demoIndex, setDemoIndex] = useState(0);
   const [demoCaption, setDemoCaption] = useState("");
   const [demoTitle, setDemoTitle] = useState("");
+  const [demoLookAt, setDemoLookAt] = useState("");
+  const [focusZone, setFocusZone] = useState<FocusZone>("none");
   const demoTimer = useRef<number | null>(null);
 
   const stormBoost = stormActive ? 1 : 0;
@@ -487,6 +499,8 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     id: string;
     title: string;
     caption: string;
+    lookAt: string;
+    focus: FocusZone;
     tab: TabId;
     run: () => void;
   };
@@ -498,6 +512,8 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         title: "Deep-space transit",
         caption:
           "Crew in cruise. Earth AI + flight surgeons ONLINE. Vitals in normal band.",
+        lookAt: "Look at D · Earth link (ONLINE) and C · Live floor (normal numbers).",
+        focus: "earth",
         tab: "overview",
         run: () => {
           setAnomaly(null);
@@ -513,7 +529,9 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         title: "Anomaly: dust storm / SPE",
         caption:
           "External anomaly detected. Radiation and environmental stress climbing.",
-        tab: "radiation",
+        lookAt: "Look at A · Mission strip (DUST/SPE) and C · Live floor dose rising.",
+        focus: "strip",
+        tab: "overview",
         run: () => setStorm(true),
       },
       {
@@ -521,6 +539,8 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         title: "Earth link lost",
         caption:
           "Connection to Earth doctors/surgeons drops. PULSE switches to OFFLINE local AI.",
+        lookAt: "Look at D · Earth link flipping to OFFLINE LOCAL AI.",
+        focus: "earth",
         tab: "overview",
         run: () => setLink("LOS"),
       },
@@ -529,7 +549,9 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         title: "Crew vital anomaly",
         caption:
           "Local AI flags Nova Reyes — tachycardia under storm stress. Suggestions ready.",
-        tab: "vitals",
+        lookAt: "Look at B · Crew (Nova hot) and E · Local AI for suggested actions.",
+        focus: "ai",
+        tab: "overview",
         run: () => triggerAnomaly("nova", "tachycardia"),
       },
       {
@@ -537,7 +559,9 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         title: "AI actions applied",
         caption:
           "Offline AI executes rest, fluids, and tighter HR watch — without Earth.",
-        tab: "vitals",
+        lookAt: "Look at E · Local AI — actions mark Done, then recovery starts.",
+        focus: "ai",
+        tab: "overview",
         run: () => applyAllInterventions(),
       },
       {
@@ -545,10 +569,18 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         title: "Vitals normalizing",
         caption:
           "After local actions, numbers trend back to mission-normal.",
-        tab: "vitals",
+        lookAt: "Look at C · Live floor — HR/SpO₂ return to normal numbers.",
+        focus: "floor",
+        tab: "overview",
         run: () => {
           setAnomaly((prev) =>
-            prev ? { ...prev, recovering: true, applied: prev.interventions.map((i) => i.id) } : prev,
+            prev
+              ? {
+                  ...prev,
+                  recovering: true,
+                  applied: prev.interventions.map((i) => i.id),
+                }
+              : prev,
           );
           setRecoveryProgress((p) => Math.max(p, 0.35));
           pushLog("Recovery in progress — trending to normal vitals.");
@@ -559,6 +591,8 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         title: "Earth link restored",
         caption:
           "AOS returns. Offline receipts and escalations sync to Earth surgeons.",
+        lookAt: "Look at D · Earth link back ONLINE and queue flushing.",
+        focus: "earth",
         tab: "overview",
         run: () => {
           setStorm(false);
@@ -572,17 +606,13 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         title: "Cited & receipted",
         caption:
           "Nineteen sources remain open — official challenge resources first.",
+        lookAt: "Open Rules & Sources tab for the citation wall.",
+        focus: "floor",
         tab: "rules",
         run: () => pushLog("Mission demo complete."),
       },
     ],
-    [
-      applyAllInterventions,
-      pushLog,
-      setLink,
-      setStorm,
-      triggerAnomaly,
-    ],
+    [applyAllInterventions, pushLog, setLink, setStorm, triggerAnomaly],
   );
 
   const applyDemoStep = useCallback(
@@ -599,6 +629,8 @@ export function PulseProvider({ children }: { children: ReactNode }) {
       setDemoIndex(index);
       setDemoTitle(step.title);
       setDemoCaption(step.caption);
+      setDemoLookAt(step.lookAt);
+      setFocusZone(step.focus);
       setTab(step.tab);
       step.run();
     },
@@ -610,6 +642,8 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     setDemoActive(false);
     setDemoTitle("");
     setDemoCaption("");
+    setDemoLookAt("");
+    setFocusZone("none");
   }, [clearDemoTimer]);
 
   const nextDemoStep = useCallback(() => {
@@ -676,6 +710,8 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     demoIndex,
     demoCaption,
     demoTitle,
+    demoLookAt,
+    focusZone,
     startDemo,
     stopDemo,
     nextDemoStep,

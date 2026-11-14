@@ -7,10 +7,9 @@ export function EarthLinkPanel() {
   const online = opsMode === "ONLINE_EARTH" && link === "AOS";
 
   return (
-    <section className="side-panel earth-panel">
+    <div className="side-panel earth-panel">
       <header>
-        <h2>Earth medical link</h2>
-        <p>Flight surgeons / Earth AI</p>
+        <p className="panel-sub">Flight surgeons / Earth AI</p>
       </header>
       <div className={`link-status ${online ? "online" : "offline"}`}>
         <strong>{online ? "ONLINE" : "OFFLINE LOCAL AI"}</strong>
@@ -48,6 +47,6 @@ export function EarthLinkPanel() {
           </li>
         ))}
       </ul>
-    </section>
+    </div>
   );
 }
