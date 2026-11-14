@@ -1,0 +1,300 @@
+@import "tailwindcss";
+
+:root {
+  --bg-0: #071018;
+  --bg-1: #0c1a24;
+  --bg-2: #122433;
+  --ink: #e7f0f5;
+  --muted: #8aa0b0;
+  --line: rgba(140, 190, 210, 0.22);
+  --accent: #2ec4b6;
+  --accent-2: #f0a202;
+  --danger: #e4572e;
+  --warn: #f4a261;
+  --ok: #3ddc97;
+  --font-display: "Space Grotesk", "Avenir Next", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@theme inline {
+  --color-background: var(--bg-0);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-body);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(46, 196, 182, 0.16), transparent 55%),
+    radial-gradient(900px 500px at 90% 0%, rgba(240, 162, 2, 0.1), transparent 50%),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1) 40%, #050c12);
+}
+
+.shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 3rem;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 0.75rem;
+}
+
+.brand {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  letter-spacing: 0.08em;
+  line-height: 0.95;
+  font-weight: 700;
+}
+
+.tagline {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.status-pills {
+  display: flex;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.status-pills span {
+  border: 1px solid var(--line);
+  padding: 0.35rem 0.55rem;
+  background: rgba(8, 20, 30, 0.65);
+}
+
+.sim-banner {
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.75rem;
+  border-left: 3px solid var(--accent-2);
+  background: rgba(240, 162, 2, 0.08);
+  color: #ffd79a;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+}
+
+.tab-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.tab {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  padding: 0.45rem 0.7rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tab.active,
+.tab:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+  background: rgba(46, 196, 182, 0.1);
+}
+
+.main {
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(18, 36, 51, 0.92), rgba(7, 16, 24, 0.9));
+  padding: 1.1rem 1.1rem 1.4rem;
+  min-height: 28rem;
+}
+
+.panel-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+}
+
+.panel-head p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+.control-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: end;
+}
+
+.btn {
+  border: 1px solid var(--accent);
+  background: rgba(46, 196, 182, 0.12);
+  color: var(--ink);
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: rgba(46, 196, 182, 0.22);
+}
+
+.btn.warn {
+  border-color: var(--warn);
+  background: rgba(244, 162, 97, 0.12);
+}
+
+.btn.danger {
+  border-color: var(--danger);
+  background: rgba(228, 87, 46, 0.15);
+}
+
+.btn.ghost {
+  border-color: var(--line);
+  background: transparent;
+}
+
+.crew-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.6rem;
+}
+
+.crew-card {
+  text-align: left;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.2);
+  color: inherit;
+  padding: 0.7rem;
+  display: grid;
+  gap: 0.2rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.crew-card.active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(46, 196, 182, 0.35);
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.6rem;
+}
+
+.metric {
+  border: 1px solid var(--line);
+  padding: 0.7rem;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.metric span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.metric strong {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+}
+
+.grid-two {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.plain-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--ink);
+}
+
+.plain-list.compact {
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.blind-msg {
+  border: 1px solid var(--danger);
+  background: rgba(228, 87, 46, 0.12);
+  padding: 0.65rem 0.8rem;
+  margin: 0;
+}
+
+label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+input[type="number"],
+input[type="text"],
+input:not([type]) {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  min-width: 5rem;
+}
+
+.threshold-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.source-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.source-list a {
+  color: var(--accent);
+}
+
+.slider-label {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 28rem;
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    flex-direction: column;
+    align-items: start;
+  }
+}

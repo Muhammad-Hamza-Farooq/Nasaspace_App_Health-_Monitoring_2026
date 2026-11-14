@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>PULSE — 7 slides</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #071018;
+        --ink: #e7f0f5;
+        --accent: #2ec4b6;
+        --muted: #8aa0b0;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+      }
+      .slide {
+        min-height: 100vh;
+        padding: 8vh 10vw;
+        border-bottom: 1px solid rgba(140, 190, 210, 0.2);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 1rem;
+      }
+      h1 { font-size: clamp(2.5rem, 7vw, 5rem); margin: 0; letter-spacing: 0.06em; }
+      h2 { font-size: clamp(1.8rem, 4vw, 3rem); margin: 0; color: var(--accent); }
+      p, li { font-size: 1.25rem; color: var(--muted); max-width: 40rem; }
+      .num { font-family: ui-monospace, monospace; color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <section class="slide"><p class="num">01</p><h1>PULSE</h1><p>Astronaut health monitoring for Earth-independent operations · NASA Space Apps 2026</p></section>
+    <section class="slide"><p class="num">02</p><h2>Problem</h2><p>No doctor on a spacecraft. Mars-class delays break real-time telemedicine. Crew must gather, evaluate, and act locally.</p></section>
+    <section class="slide"><p class="num">03</p><h2>Approach</h2><p>Gather → Evaluate → Act with BLIND gates, receipted engines, HRP hazard channels, and a Named Risk Registry.</p></section>
+    <section class="slide"><p class="num">04</p><h2>Demo path</h2><p>Crew strip → storm replay → LOS queue (QUEUED-FS) → AOS sync flush → nineteen sources.</p></section>
+    <section class="slide"><p class="num">05</p><h2>Evidence</h2><ul><li>NASA HRP hazards / risks / ongoing research</li><li>CSA radiation monitoring + space science</li></ul></section>
+    <section class="slide"><p class="num">06</p><h2>Honesty</h2><p>Simulated data. Demo placeholders for non-public limits. Not a medical device.</p></section>
+    <section class="slide"><p class="num">07</p><h2>Next</h2><p>Deployed prototype · open citations · judge tour ready.</p></section>
+  </body>
+</html>
