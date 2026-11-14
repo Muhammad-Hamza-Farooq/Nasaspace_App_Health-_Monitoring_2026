@@ -31,10 +31,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}
+      className={`${display.variable} ${body.variable} ${mono.variable} antialiased`}
     >
       <body
-        className="h-full overflow-hidden"
+        className="min-h-full overflow-x-hidden overflow-y-auto"
         style={
           {
             ["--font-display"]: "var(--font-display-loaded), sans-serif",
