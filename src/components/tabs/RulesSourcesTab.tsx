@@ -8,10 +8,10 @@ export function RulesSourcesTab() {
   const official = getOfficialSources();
 
   return (
-    <div className="panel-stack" data-testid="tab-rules">
+    <div className="panel-stack dash" data-testid="tab-rules">
       <header className="panel-head">
         <h2>Rules &amp; sources</h2>
-        <p>Configurable defaults (receipted edits) and nineteen in-app citations.</p>
+        <p>Configurable defaults (receipted) and nineteen in-app citations.</p>
       </header>
 
       <section className="threshold-grid">
@@ -54,7 +54,7 @@ export function RulesSourcesTab() {
       </section>
 
       <section>
-        <h3>Official challenge resources (first)</h3>
+        <h3>Official challenge resources</h3>
         <ol className="source-list" data-testid="official-sources">
           {official.map((s) => (
             <li key={s.id}>

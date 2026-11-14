@@ -1,11 +1,14 @@
 # Task tracker
 
 - [x] Analyze citation ZIP
-- [x] Scaffold directories
-- [x] Write understanding MD
-- [x] Authenticate GitHub / Vercel / Supabase
-- [ ] Finish skill installs (hyperframes, brag, pptx, supabase)
-- [ ] Init git + link remote + push scaffold (on request)
-- [ ] Implement PULSE app
-- [ ] Deploy to Vercel + wire Supabase
-- [ ] Demo video (HyperFrames / brag) + slides (pptx)
+- [x] Cleanup Z/temp work files
+- [x] Scaffold directories + docs
+- [x] Install skills / auth
+- [x] Next.js PULSE app (7 tabs)
+- [x] Engines, BLIND, receipts, LOS/AOS
+- [x] Unit + Playwright tests + QA_12_CHECK
+- [x] Supabase core tables
+- [x] Push to GitHub main
+- [x] Deploy Vercel production
+- [ ] Optional: connect Vercel GitHub integration for auto-deploy
+- [ ] Optional: record 30-sec / HyperFrames video

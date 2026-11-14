@@ -1,46 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { MultiLine } from "@/components/charts/MultiLine";
+import { SparkLine } from "@/components/charts/SparkLine";
 import { usePulse } from "@/lib/pulse/store";
 
 export function VitalsTab() {
   const {
-    snapshots,
-    selectedCrewId,
+    selectedSnap,
+    selectedHistory,
     injectBadSample,
     lastBlindMessage,
     runManualVitals,
     tick,
   } = usePulse();
-  const snap = snapshots.find((s) => s.crewId === selectedCrewId) ?? snapshots[0];
   const [hr, setHr] = useState("72");
   const [spo2, setSpo2] = useState("98");
 
+  const combined = useMemo(
+    () =>
+      selectedHistory.map((p) => ({
+        t: p.t,
+        hr: p.hr,
+        spo2: p.spo2,
+        temp: p.tempC,
+      })),
+    [selectedHistory],
+  );
+
   return (
-    <div className="panel-stack" data-testid="tab-vitals">
+    <div className="panel-stack dash" data-testid="tab-vitals">
       <header className="panel-head">
-        <h2>Vitals</h2>
-        <p>Live stream + manual entry. BLIND gate refuses bad samples.</p>
+        <h2>Vitals console</h2>
+        <p>Live figures + manual entry. BLIND gate refuses bad samples.</p>
       </header>
 
-      {snap && (
+      {selectedSnap && (
         <div className="metric-grid" data-testid="vitals-live">
           <div className="metric">
             <span>HR</span>
-            <strong data-testid="vitals-hr">{snap.vitals.hr}</strong>
+            <strong data-testid="vitals-hr">{selectedSnap.vitals.hr}</strong>
           </div>
           <div className="metric">
             <span>SpO₂</span>
-            <strong>{snap.vitals.spo2}%</strong>
+            <strong>{selectedSnap.vitals.spo2}%</strong>
           </div>
           <div className="metric">
             <span>Temp</span>
-            <strong>{snap.vitals.tempC}°C</strong>
+            <strong>{selectedSnap.vitals.tempC}°C</strong>
           </div>
           <div className="metric">
             <span>BP</span>
             <strong>
-              {snap.vitals.sbp}/{snap.vitals.dbp}
+              {selectedSnap.vitals.sbp}/{selectedSnap.vitals.dbp}
             </strong>
           </div>
           <div className="metric">
@@ -49,6 +61,30 @@ export function VitalsTab() {
           </div>
         </div>
       )}
+
+      <div className="figure-grid">
+        <section className="figure">
+          <h3>HR · SpO₂ · Temp</h3>
+          <MultiLine
+            data={combined}
+            series={[
+              { key: "hr", name: "HR", color: "#e4572e" },
+              { key: "spo2", name: "SpO₂", color: "#2ec4b6" },
+              { key: "temp", name: "Temp", color: "#f0a202" },
+            ]}
+          />
+        </section>
+        <section className="figure">
+          <h3>Heart rate detail</h3>
+          <SparkLine
+            data={selectedHistory.map((p) => ({ t: p.t, v: p.hr }))}
+            color="#e4572e"
+            unit=" bpm"
+            height={180}
+            domain={[40, 120]}
+          />
+        </section>
+      </div>
 
       <div className="control-row">
         <label>
@@ -74,7 +110,12 @@ export function VitalsTab() {
         >
           Evaluate sample
         </button>
-        <button type="button" className="btn warn" data-testid="inject-blind" onClick={injectBadSample}>
+        <button
+          type="button"
+          className="btn warn"
+          data-testid="inject-blind"
+          onClick={injectBadSample}
+        >
           Inject bad sample (BLIND)
         </button>
       </div>

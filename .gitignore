@@ -51,3 +51,6 @@ demo/video/brag-output/
 demo/slides/**/*.tmp
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
+.env*

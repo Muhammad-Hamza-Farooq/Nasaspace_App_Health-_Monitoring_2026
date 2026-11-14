@@ -59,5 +59,11 @@ test("PULSE smoke: tabs, storm, LOS/AOS, sources", async ({ page }) => {
   await expect(sources).toHaveCount(19);
   await expect(page.getByTestId("official-sources").locator("li")).toHaveCount(5);
 
+  await page.getByTestId("nav-overview").click();
+  await page.getByTestId("demo-mode-btn").click();
+  await expect(page.getByTestId("demo-overlay")).toBeVisible();
+  await expect(page.getByTestId("demo-title")).toBeVisible();
+  await page.getByTestId("demo-stop").click();
+
   expect(errors).toEqual([]);
 });

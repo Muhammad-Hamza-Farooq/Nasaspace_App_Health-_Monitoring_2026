@@ -1,5 +1,6 @@
 "use client";
 
+import { DemoOverlay } from "@/components/DemoOverlay";
 import { SimBanner } from "@/components/SimBanner";
 import { BehavioralTab } from "@/components/tabs/BehavioralTab";
 import { CountermeasuresTab } from "@/components/tabs/CountermeasuresTab";
@@ -21,22 +22,88 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 function ShellInner() {
-  const { tab, setTab, link, stormActive } = usePulse();
+  const {
+    tab,
+    setTab,
+    link,
+    stormActive,
+    tick,
+    selectedSnap,
+    queue,
+    receipts,
+    startDemo,
+    demoActive,
+    judgeTour,
+  } = usePulse();
+
+  const queued = queue.filter((q) => q.status === "QUEUED-FS").length;
 
   return (
-    <div className="shell" data-testid="pulse-shell">
+    <div className={`shell ${demoActive ? "demo-on" : ""}`} data-testid="pulse-shell">
       <header className="topbar">
         <div className="brand-block">
           <p className="brand">PULSE</p>
-          <p className="tagline">Astronaut health monitor — gather, evaluate, act</p>
+          <p className="tagline">Interactive astronaut health dashboard</p>
         </div>
-        <div className="status-pills">
-          <span data-testid="status-link">LINK {link}</span>
-          <span data-testid="status-storm">{stormActive ? "STORM" : "QUIET"}</span>
+        <div className="top-actions">
+          <button
+            type="button"
+            className={demoActive ? "btn danger" : "btn accent"}
+            data-testid="demo-mode-btn"
+            onClick={startDemo}
+          >
+            {demoActive ? "Demo running…" : "Demo Mode"}
+          </button>
+          <button
+            type="button"
+            className="btn ghost"
+            data-testid="judge-tour"
+            onClick={() => judgeTour()}
+          >
+            Judge tour
+          </button>
         </div>
       </header>
 
       <SimBanner />
+      <DemoOverlay />
+
+      <div className="ops-rail" data-testid="ops-rail">
+        <div className="ops-chip">
+          <span>SOL</span>
+          <strong>{140 + Math.floor(tick / 20)}</strong>
+        </div>
+        <div className="ops-chip">
+          <span>LINK</span>
+          <strong
+            className={link === "LOS" ? "warn" : "ok"}
+            data-testid="status-link"
+          >
+            LINK {link}
+          </strong>
+        </div>
+        <div className="ops-chip">
+          <span>WX</span>
+          <strong
+            className={stormActive ? "warn" : ""}
+            data-testid="status-storm"
+          >
+            {stormActive ? "STORM" : "QUIET"}
+          </strong>
+        </div>
+        <div className="ops-chip">
+          <span>CREW</span>
+          <strong>{selectedSnap?.name.split(" ")[0] ?? "—"}</strong>
+        </div>
+        <div className="ops-chip">
+          <span>QUEUE</span>
+          <strong>{queued}</strong>
+        </div>
+        <div className="ops-chip">
+          <span>RCPT</span>
+          <strong>{receipts.length}</strong>
+        </div>
+      </div>
 
       <nav className="tab-nav" aria-label="PULSE sections" data-testid="tab-nav">
         {TABS.map((t) => (

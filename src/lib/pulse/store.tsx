@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -41,6 +42,7 @@ import {
   type Thresholds,
 } from "@/lib/thresholds";
 import type { VitalSample } from "@/lib/blind";
+import { HISTORY_LEN, type TelemetryPoint } from "@/lib/pulse/types";
 
 export type TabId =
   | "overview"
@@ -51,16 +53,30 @@ export type TabId =
   | "behavioral"
   | "rules";
 
+export type DemoStep = {
+  id: string;
+  title: string;
+  caption: string;
+  tab: TabId;
+  run: () => void;
+};
+
+type HistoryMap = Record<string, TelemetryPoint[]>;
+
 type PulseState = {
   tab: TabId;
   setTab: (t: TabId) => void;
   tick: number;
   stormActive: boolean;
   stormBoost: number;
+  setStorm: (on: boolean) => void;
   toggleStorm: () => void;
   snapshots: CrewSnapshot[];
   selectedCrewId: string;
   setSelectedCrewId: (id: string) => void;
+  selectedSnap: CrewSnapshot | undefined;
+  history: HistoryMap;
+  selectedHistory: TelemetryPoint[];
   link: LinkState;
   setLink: (s: LinkState) => void;
   queue: Escalation[];
@@ -74,9 +90,20 @@ type PulseState = {
   setMoodCheckIn: (score: number) => void;
   escalateSelected: () => void;
   judgeTour: () => { ok: boolean; steps: string[] };
+  demoActive: boolean;
+  demoIndex: number;
+  demoCaption: string;
+  demoTitle: string;
+  startDemo: () => void;
+  stopDemo: () => void;
+  nextDemoStep: () => void;
 };
 
 const PulseContext = createContext<PulseState | null>(null);
+
+function emptyHistory(): HistoryMap {
+  return Object.fromEntries(CREW.map((c) => [c.id, [] as TelemetryPoint[]]));
+}
 
 export function PulseProvider({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<TabId>("overview");
@@ -90,12 +117,20 @@ export function PulseProvider({ children }: { children: ReactNode }) {
   const [lastBlindMessage, setLastBlindMessage] = useState<string | null>(null);
   const [moodScore, setMoodScore] = useState(6.5);
   const [hydrated, setHydrated] = useState(false);
+  const [history, setHistory] = useState<HistoryMap>(emptyHistory);
+  const [demoActive, setDemoActive] = useState(false);
+  const [demoIndex, setDemoIndex] = useState(0);
+  const [demoCaption, setDemoCaption] = useState("");
+  const [demoTitle, setDemoTitle] = useState("");
+  const demoTimer = useRef<number | null>(null);
 
   const stormBoost = stormActive ? 1 : 0;
   const snapshots = useMemo(
     () => allCrewSnapshots(tick, stormBoost),
     [tick, stormBoost],
   );
+  const selectedSnap = snapshots.find((s) => s.crewId === selectedCrewId) ?? snapshots[0];
+  const selectedHistory = history[selectedCrewId] ?? [];
 
   useEffect(() => {
     setLinkState(loadLinkState());
@@ -107,11 +142,36 @@ export function PulseProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    const id = window.setInterval(() => setTick((t) => t + 1), 1500);
+    const id = window.setInterval(() => setTick((t) => t + 1), 1200);
     return () => window.clearInterval(id);
   }, [hydrated]);
 
-  // Emit engine receipts periodically for selected crew (receipted outputs)
+  // Append telemetry history each tick
+  useEffect(() => {
+    if (!hydrated) return;
+    setHistory((prev) => {
+      const next = { ...prev };
+      for (const snap of snapshots) {
+        const point: TelemetryPoint = {
+          t: snap.tick,
+          hr: snap.vitals.hr as number,
+          spo2: snap.vitals.spo2 as number,
+          tempC: snap.vitals.tempC as number,
+          sbp: snap.vitals.sbp as number,
+          dbp: snap.vitals.dbp as number,
+          radiationMsvDay: snap.radiationMsvDay,
+          co2MmHg: snap.co2MmHg,
+          sleepHours: snap.sleepHours,
+          exerciseMin: snap.exerciseMin,
+          mood: snap.mood,
+        };
+        const series = [...(next[snap.crewId] ?? []), point].slice(-HISTORY_LEN);
+        next[snap.crewId] = series;
+      }
+      return next;
+    });
+  }, [tick, hydrated, snapshots]);
+
   useEffect(() => {
     if (!hydrated || tick === 0 || tick % 4 !== 0) return;
     const snap = snapshots.find((s) => s.crewId === selectedCrewId) ?? snapshots[0];
@@ -145,6 +205,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     setLinkState(s);
   }, []);
 
+  const setStorm = useCallback((on: boolean) => setStormActive(on), []);
   const toggleStorm = useCallback(() => setStormActive((v) => !v), []);
 
   const updateThreshold = useCallback((key: keyof Thresholds, value: number) => {
@@ -159,7 +220,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
 
   const injectBadSample = useCallback(() => {
     const finding = runVitalsEngine(
-      { hr: NaN, spo2: 98, tempC: 36.6, sbp: 120, dbp: 80 },
+      { hr: Number.NaN, spo2: 98, tempC: 36.6, sbp: 120, dbp: 80 },
       thresholds,
     );
     setLastBlindMessage(finding.message);
@@ -227,9 +288,146 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     setStormActive(false);
     setTab("rules");
     steps.push("sources");
-    const ok = steps.length === 5;
-    return { ok, steps };
+    return { ok: steps.length === 5, steps };
   }, [selectedCrewId]);
+
+  const clearDemoTimer = useCallback(() => {
+    if (demoTimer.current !== null) {
+      window.clearTimeout(demoTimer.current);
+      demoTimer.current = null;
+    }
+  }, []);
+
+  const demoSteps: DemoStep[] = useMemo(
+    () => [
+      {
+        id: "intro",
+        title: "Mission console",
+        caption:
+          "PULSE live dashboard — four crew, hazard-grouped channels, receipted engines.",
+        tab: "overview",
+        run: () => {
+          setStormActive(false);
+          setLink("AOS");
+        },
+      },
+      {
+        id: "vitals",
+        title: "Vitals figures",
+        caption: "Interactive HR / SpO₂ / BP streams for the selected crew member.",
+        tab: "vitals",
+        run: () => setSelectedCrewId(CREW[0].id),
+      },
+      {
+        id: "storm",
+        title: "Solar storm replay",
+        caption: "DONKI-style SPE boost — watch radiation dose climb on the chart.",
+        tab: "radiation",
+        run: () => setStormActive(true),
+      },
+      {
+        id: "los",
+        title: "LOS store-forward",
+        caption: "Earth link lost. Escalation queues as QUEUED-FS for the flight surgeon.",
+        tab: "overview",
+        run: () => {
+          setLink("LOS");
+          enqueueEscalation(
+            {
+              crewId: selectedCrewId,
+              severity: "urgent",
+              message: "Demo Mode: SPE medical escalate while LOS",
+            },
+            "LOS",
+          );
+          setQueue(loadQueue());
+          setReceipts(loadReceipts());
+        },
+      },
+      {
+        id: "aos",
+        title: "AOS flush",
+        caption: "Link restored. Queue flushes with sync receipts.",
+        tab: "overview",
+        run: () => setLink("AOS"),
+      },
+      {
+        id: "blind",
+        title: "BLIND quality gate",
+        caption: "Bad sensor sample refused — no invented vitals pass the gate.",
+        tab: "vitals",
+        run: () => injectBadSample(),
+      },
+      {
+        id: "mood",
+        title: "Behavioral check-in",
+        caption: "Isolation hazard channel — mood score written with a receipt.",
+        tab: "behavioral",
+        run: () => setMoodCheckIn(4.5),
+      },
+      {
+        id: "sources",
+        title: "Nineteen citations",
+        caption: "Official challenge resources 21–25 listed first for eligibility.",
+        tab: "rules",
+        run: () => setStormActive(false),
+      },
+    ],
+    [injectBadSample, selectedCrewId, setLink, setMoodCheckIn],
+  );
+
+  const applyDemoStep = useCallback(
+    (index: number) => {
+      const step = demoSteps[index];
+      if (!step) {
+        setDemoActive(false);
+        setDemoTitle("Demo complete");
+        setDemoCaption("Judge tour path finished. Explore any panel freely.");
+        return;
+      }
+      setDemoIndex(index);
+      setDemoTitle(step.title);
+      setDemoCaption(step.caption);
+      setTab(step.tab);
+      step.run();
+    },
+    [demoSteps],
+  );
+
+  const stopDemo = useCallback(() => {
+    clearDemoTimer();
+    setDemoActive(false);
+    setDemoTitle("");
+    setDemoCaption("");
+  }, [clearDemoTimer]);
+
+  const nextDemoStep = useCallback(() => {
+    clearDemoTimer();
+    const next = demoIndex + 1;
+    if (next >= demoSteps.length) {
+      stopDemo();
+      setDemoTitle("Demo complete");
+      setDemoCaption("Judge tour path finished. Explore any panel freely.");
+      return;
+    }
+    applyDemoStep(next);
+  }, [applyDemoStep, clearDemoTimer, demoIndex, demoSteps.length, stopDemo]);
+
+  const startDemo = useCallback(() => {
+    clearDemoTimer();
+    setDemoActive(true);
+    applyDemoStep(0);
+  }, [applyDemoStep, clearDemoTimer]);
+
+  // Auto-advance demo every 4.5s while active
+  useEffect(() => {
+    if (!demoActive) return;
+    clearDemoTimer();
+    demoTimer.current = window.setTimeout(() => {
+      nextDemoStep();
+    }, 4500);
+    return clearDemoTimer;
+  }, [demoActive, demoIndex, nextDemoStep, clearDemoTimer]);
 
   const value: PulseState = {
     tab,
@@ -237,10 +435,14 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     tick,
     stormActive,
     stormBoost,
+    setStorm,
     toggleStorm,
     snapshots,
     selectedCrewId,
     setSelectedCrewId,
+    selectedSnap,
+    history,
+    selectedHistory,
     link,
     setLink,
     queue,
@@ -254,6 +456,13 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     setMoodCheckIn,
     escalateSelected,
     judgeTour,
+    demoActive,
+    demoIndex,
+    demoCaption,
+    demoTitle,
+    startDemo,
+    stopDemo,
+    nextDemoStep,
   };
 
   return <PulseContext.Provider value={value}>{children}</PulseContext.Provider>;
