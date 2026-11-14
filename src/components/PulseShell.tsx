@@ -6,6 +6,7 @@ import { AiAdvisorPanel } from "@/components/mission/AiAdvisorPanel";
 import { CrewRail } from "@/components/mission/CrewRail";
 import { EarthLinkPanel } from "@/components/mission/EarthLinkPanel";
 import { HeroTelemetry } from "@/components/mission/HeroTelemetry";
+import { IncidentOverlay } from "@/components/mission/IncidentOverlay";
 import { Zone } from "@/components/mission/Zone";
 import { BehavioralTab } from "@/components/tabs/BehavioralTab";
 import { CountermeasuresTab } from "@/components/tabs/CountermeasuresTab";
@@ -39,10 +40,21 @@ function ShellInner() {
     escalateSelected,
     injectBadSample,
     focusZone,
+    spaceWx,
   } = usePulse();
+
+  const wxLabel =
+    spaceWx === "flare_hf"
+      ? "FLARE HF BLACKOUT"
+      : spaceWx === "mars_conjunction"
+        ? "MARS CONJUNCTION"
+        : stormActive
+          ? "DUST/SPE"
+          : "CLEAR";
 
   return (
     <div className={`mission-screen ${demoActive ? "demo-on" : ""}`} data-testid="pulse-shell">
+      <IncidentOverlay />
       <Zone
         id="strip"
         code="A"
@@ -72,9 +84,9 @@ function ShellInner() {
               <strong className={link === "LOS" ? "warn" : "ok"}>{link}</strong>
             </div>
             <div className="ms-item">
-              <span>ANOMALY WX</span>
-              <strong className={stormActive ? "warn" : ""}>
-                {stormActive ? "DUST/SPE" : "CLEAR"}
+              <span>SPACE WX</span>
+              <strong className={spaceWx !== "clear" || stormActive ? "warn" : ""}>
+                {wxLabel}
               </strong>
             </div>
           </div>

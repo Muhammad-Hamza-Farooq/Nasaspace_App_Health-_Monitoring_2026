@@ -70,6 +70,14 @@ export type FocusZone =
   | "ai"
   | "none";
 
+export type SpaceWxKind = "clear" | "flare_hf" | "mars_conjunction";
+
+export type IncidentAlert = {
+  title: string;
+  detail: string;
+  sub: string;
+};
+
 type HistoryMap = Record<string, TelemetryPoint[]>;
 
 type PulseState = {
@@ -110,6 +118,10 @@ type PulseState = {
   demoTitle: string;
   demoLookAt: string;
   focusZone: FocusZone;
+  incidentAlert: IncidentAlert | null;
+  spaceWx: SpaceWxKind;
+  patientCrewId: string | null;
+  actingCrewId: string | null;
   startDemo: () => void;
   stopDemo: () => void;
   nextDemoStep: () => void;
@@ -183,6 +195,10 @@ export function PulseProvider({ children }: { children: ReactNode }) {
   const [demoTitle, setDemoTitle] = useState("");
   const [demoLookAt, setDemoLookAt] = useState("");
   const [focusZone, setFocusZone] = useState<FocusZone>("none");
+  const [incidentAlert, setIncidentAlert] = useState<IncidentAlert | null>(null);
+  const [spaceWx, setSpaceWx] = useState<SpaceWxKind>("clear");
+  const [patientCrewId, setPatientCrewId] = useState<string | null>(null);
+  const [actingCrewId, setActingCrewId] = useState<string | null>(null);
   const demoTimer = useRef<number | null>(null);
 
   const stormBoost = stormActive ? 1 : 0;
@@ -530,6 +546,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     lookAt: string;
     focus: FocusZone;
     tab: TabId;
+    delayMs: number;
     run: () => void;
   };
 
@@ -539,78 +556,131 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         id: "cruise",
         title: "Deep-space transit",
         caption:
-          "Crew in cruise. Earth AI + flight surgeons ONLINE. Vitals in normal band.",
-        lookAt: "Look at D · Earth link (ONLINE) and C · Live floor (normal numbers).",
+          "Crew in cruise. Earth surgeons ONLINE. Wearables and cabin sensors feed the live floor.",
+        lookAt: "Look at D Earth link ONLINE and C Live floor normal vitals.",
         focus: "earth",
         tab: "overview",
+        delayMs: 4500,
         run: () => {
           setAnomaly(null);
           setRecoveryProgress(0);
           setStormActive(false);
+          setIncidentAlert(null);
+          setSpaceWx("clear");
+          setPatientCrewId(null);
+          setActingCrewId(null);
+          setSelectedCrewId("nova");
           setLink("AOS");
           setOpsMode("ONLINE_EARTH");
           pushLog("Mission demo start — Earth medical channel ONLINE.");
         },
       },
       {
-        id: "storm",
-        title: "Anomaly: dust storm / SPE",
+        id: "flare-alert",
+        title: "Solar flare · HF blackout",
         caption:
-          "External anomaly detected. Radiation and environmental stress climbing.",
-        lookAt: "Look at A · Mission strip (DUST/SPE) and C · Live floor dose rising.",
+          "X-class flare. HF radio blackout — Earth medical voice and data drop for minutes to hours.",
+        lookAt: "Full-screen flare warning. Then watch A strip and D Earth link.",
         focus: "strip",
         tab: "overview",
-        run: () => setStorm(true),
+        delayMs: 3000,
+        run: () => {
+          setSpaceWx("flare_hf");
+          setStorm(true);
+          setIncidentAlert({
+            title: "FLARE HF RADIO BLACKOUT",
+            detail:
+              "Solar flare ionizing the ionosphere. High-frequency radio and medical uplink disrupted.",
+            sub: "Typical window: a few minutes to several hours (NOAA R-scale).",
+          });
+          pushLog("Space weather: flare HF radio blackout declared.");
+        },
       },
       {
-        id: "los",
-        title: "Earth link lost",
+        id: "service-down",
+        title: "Earth service down",
         caption:
-          "Connection to Earth doctors/surgeons drops. PULSE switches to OFFLINE local AI.",
-        lookAt: "Look at D · Earth link flipping to OFFLINE LOCAL AI.",
+          "Link is LOS. Surgeons unreachable. PULSE flips to OFFLINE local AI only.",
+        lookAt: "Look at D Earth link OFFLINE and A strip LOCAL AI ONLY.",
         focus: "earth",
         tab: "overview",
-        run: () => setLink("LOS"),
+        delayMs: 4500,
+        run: () => {
+          setIncidentAlert(null);
+          setLink("LOS");
+          pushLog("Earth medical channel LOS — local AI sole advisor.");
+        },
+      },
+      {
+        id: "conjunction",
+        title: "Mars solar conjunction",
+        caption:
+          "On a Mars path, solar conjunction can pause commands ~2 weeks, with ~1–2 days of hard occultation. Autonomy is not optional.",
+        lookAt: "Look at A strip CONJUNCTION and D outage ranges.",
+        focus: "strip",
+        tab: "overview",
+        delayMs: 5500,
+        run: () => {
+          setSpaceWx("mars_conjunction");
+          pushLog(
+            "Mars solar conjunction profile — multi-day to multi-week autonomy window.",
+          );
+        },
       },
       {
         id: "vitals-anomaly",
-        title: "Crew vital anomaly",
+        title: "Patient vitals climbing",
         caption:
-          "Nova Reyes heart rate spikes above the mission band. Watch the vitals.",
-        lookAt: "Look at C Live floor vitals climbing, then E for cited advice.",
+          "Commander Nova Reyes: heart rate spikes above band. Live floor numbers move in real time.",
+        lookAt: "Look at B Nova (PATIENT) and C Live floor HR climbing.",
         focus: "floor",
-        tab: "vitals",
-        run: () => triggerAnomaly("nova", "tachycardia"),
+        tab: "overview",
+        delayMs: 7000,
+        run: () => {
+          setPatientCrewId("nova");
+          setSelectedCrewId("nova");
+          triggerAnomaly("nova", "tachycardia");
+          pushLog("Anomaly: Nova Reyes tachycardia on wearable HR.");
+        },
       },
       {
         id: "ai-advise",
-        title: "Local AI cites next steps",
+        title: "Local AI analyzes",
         caption:
-          "Local AI names the problem and lists cited procedures only.",
-        lookAt: "Look at E Local AI: problem line, citation IDs, Apply controls.",
+          "Offline model names the problem and lists cited procedures only — no free advice without a source ID.",
+        lookAt: "Look at E Local AI: problem, citations, Apply. Device strip shows laptop + model.",
         focus: "ai",
-        tab: "vitals",
+        tab: "overview",
+        delayMs: 7000,
         run: () => pushLog("Local AI presenting cited standing orders."),
       },
       {
-        id: "act",
-        title: "Cited AI actions applied",
+        id: "crew-apply",
+        title: "Second crew applies care",
         caption:
-          "Crew applies rest, fluids, and tighter heart-rate watch from citations.",
-        lookAt: "Look at E Local AI as actions mark Applied, then monitoring.",
-        focus: "ai",
-        tab: "vitals",
-        run: () => applyAllInterventions(),
+          "Dr. Amara Diallo (Crew Medical Officer) applies rest, fluids, and tighter HR watch from the citations.",
+        lookAt: "Look at B Amara (APPLYING) and E actions flipping to Applied.",
+        focus: "crew",
+        tab: "overview",
+        delayMs: 6500,
+        run: () => {
+          setActingCrewId("amara");
+          setSelectedCrewId("amara");
+          applyAllInterventions();
+          pushLog("Amara Diallo applying cited procedures to Nova Reyes.");
+        },
       },
       {
         id: "recover",
         title: "Vitals normalizing",
         caption:
-          "After cited procedures, monitoring continues until vitals are normal.",
-        lookAt: "Look at C Live floor: heart rate and SpO2 return to normal.",
+          "Monitor continues. Nova heart rate and SpO2 return toward the mission band while Earth is still offline.",
+        lookAt: "Look at C Live floor as HR falls back into band.",
         focus: "floor",
-        tab: "vitals",
+        tab: "overview",
+        delayMs: 7000,
         run: () => {
+          setSelectedCrewId("nova");
           setAnomaly((prev) =>
             prev
               ? {
@@ -621,34 +691,32 @@ export function PulseProvider({ children }: { children: ReactNode }) {
                 }
               : prev,
           );
-          setRecoveryProgress((p) => Math.max(p, 0.35));
+          setRecoveryProgress((p) => Math.max(p, 0.4));
           pushLog("Monitoring vitals after cited procedures…");
         },
       },
       {
-        id: "aos",
-        title: "Earth link restored",
+        id: "hold-offline",
+        title: "Still offline · crew safe",
         caption:
-          "AOS returns. Offline receipts and escalations sync to Earth surgeons.",
-        lookAt: "Look at D · Earth link back ONLINE and queue flushing.",
+          "Flare blackouts last minutes to hours; conjunction can last weeks. Local AI + receipts keep the crew safe until AOS returns.",
+        lookAt: "Look at D still OFFLINE and C vitals nominal. Demo ends here — no Rules tab.",
         focus: "earth",
         tab: "overview",
+        delayMs: 5500,
         run: () => {
-          setStorm(false);
-          setLink("AOS");
+          setActingCrewId(null);
+          setPatientCrewId(null);
           setAnomaly(null);
           setRecoveryProgress(0);
+          setStormActive(false);
+          // Stay LOS / OFFLINE — autonomy story, not a tidy reconnect finale.
+          setLink("LOS");
+          setOpsMode("OFFLINE_LOCAL");
+          pushLog(
+            "Demo complete — offline local AI held the floor through flare + conjunction risk.",
+          );
         },
-      },
-      {
-        id: "sources",
-        title: "Cited & receipted",
-        caption:
-          "Nineteen sources remain open — official challenge resources first.",
-        lookAt: "Open Rules & Sources tab for the citation wall.",
-        focus: "floor",
-        tab: "rules",
-        run: () => pushLog("Mission demo complete."),
       },
     ],
     [applyAllInterventions, pushLog, setLink, setStorm, triggerAnomaly],
@@ -661,7 +729,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         setDemoActive(false);
         setDemoTitle("Mission complete");
         setDemoCaption(
-          "Offline local AI kept the crew safe until Earth link returned.",
+          "Offline local AI kept the crew safe through flare blackout and conjunction risk.",
         );
         return;
       }
@@ -683,6 +751,9 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     setDemoCaption("");
     setDemoLookAt("");
     setFocusZone("none");
+    setIncidentAlert(null);
+    setActingCrewId(null);
+    setPatientCrewId(null);
   }, [clearDemoTimer]);
 
   const nextDemoStep = useCallback(() => {
@@ -692,7 +763,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
       stopDemo();
       setDemoTitle("Mission complete");
       setDemoCaption(
-        "Offline local AI kept the crew safe until Earth link returned.",
+        "Offline local AI kept the crew safe through flare blackout and conjunction risk.",
       );
       return;
     }
@@ -708,12 +779,11 @@ export function PulseProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!demoActive) return;
     clearDemoTimer();
-    // Give vitals / AI / recover beats more dwell so scroll + reading keep up.
-    const longBeat = demoIndex >= 3 && demoIndex <= 6;
-    const delay = longBeat ? 6200 : 4200;
+    const step = demoSteps[demoIndex];
+    const delay = step?.delayMs ?? 4500;
     demoTimer.current = window.setTimeout(() => nextDemoStep(), delay);
     return clearDemoTimer;
-  }, [demoActive, demoIndex, nextDemoStep, clearDemoTimer]);
+  }, [demoActive, demoIndex, demoSteps, nextDemoStep, clearDemoTimer]);
 
   const value: PulseState = {
     tab,
@@ -753,6 +823,10 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     demoTitle,
     demoLookAt,
     focusZone,
+    incidentAlert,
+    spaceWx,
+    patientCrewId,
+    actingCrewId,
     startDemo,
     stopDemo,
     nextDemoStep,

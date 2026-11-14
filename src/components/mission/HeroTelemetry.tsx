@@ -2,10 +2,19 @@
 
 import { MultiLine } from "@/components/charts/MultiLine";
 import { GaugeBar } from "@/components/charts/GaugeBar";
+import { DeviceMap } from "@/components/mission/DeviceMap";
 import { usePulse } from "@/lib/pulse/store";
 
 export function HeroTelemetry() {
-  const { selectedSnap, selectedHistory, thresholds, tick, anomaly } = usePulse();
+  const {
+    selectedSnap,
+    selectedHistory,
+    thresholds,
+    tick,
+    anomaly,
+    patientCrewId,
+    actingCrewId,
+  } = usePulse();
   if (!selectedSnap) return null;
 
   const chart = selectedHistory.map((p) => ({
@@ -27,6 +36,8 @@ export function HeroTelemetry() {
             {anomaly?.crewId === selectedSnap.crewId
               ? ` · ANOMALY: ${anomaly.title}`
               : " · nominal watch"}
+            {patientCrewId === selectedSnap.crewId ? " · PATIENT" : ""}
+            {actingCrewId === selectedSnap.crewId ? " · APPLYING CARE" : ""}
           </p>
         </div>
         <div className="hero-big-grid" data-testid="vitals-live">
@@ -116,6 +127,8 @@ export function HeroTelemetry() {
           ]}
         />
       </div>
+
+      <DeviceMap />
     </section>
   );
 }

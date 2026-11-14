@@ -965,4 +965,191 @@ input:not([type]) {
   .demo-bar {
     grid-template-columns: 1fr;
   }
+
+  .device-map {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* —— Incident overlay (flare / conjunction) —— */
+.incident-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(ellipse at center, rgba(180, 20, 20, 0.55), rgba(40, 0, 0, 0.92)),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.12) 2px,
+      rgba(0, 0, 0, 0.12) 4px
+    );
+  animation: incident-pulse 0.9s ease-in-out infinite alternate;
+}
+
+.incident-card {
+  max-width: 36rem;
+  text-align: center;
+  border: 2px solid #ff4d4d;
+  background: rgba(20, 0, 0, 0.85);
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 0 40px rgba(255, 40, 40, 0.35);
+}
+
+.incident-kicker {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  color: #ff8a8a;
+}
+
+.incident-card h2 {
+  margin: 0 0 0.65rem;
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+
+.incident-card p {
+  margin: 0;
+  color: #ffd0d0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.incident-sub {
+  margin-top: 0.75rem !important;
+  font-family: var(--font-mono);
+  font-size: 0.78rem !important;
+  color: #ffb0b0 !important;
+}
+
+@keyframes incident-pulse {
+  from {
+    background-color: rgba(120, 0, 0, 0.2);
+  }
+  to {
+    background-color: rgba(200, 10, 10, 0.35);
+  }
+}
+
+/* —— Device map —— */
+.device-map {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.device-col h3 {
+  margin: 0 0 0.2rem;
+  font-size: 0.85rem;
+}
+
+.device-col ul {
+  list-style: none;
+  margin: 0.45rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.device-col li {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.device-col li b {
+  font-size: 0.78rem;
+}
+
+.device-col li span {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.device-col.ai li {
+  border-color: rgba(91, 141, 239, 0.35);
+}
+
+.device-hint {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+}
+
+/* —— Crew patient / applying —— */
+.crew-badge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.1rem 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--line);
+}
+
+.crew-badge.patient {
+  color: #ff8a6a;
+  border-color: rgba(228, 87, 46, 0.55);
+  background: rgba(228, 87, 46, 0.12);
+}
+
+.crew-badge.acting {
+  color: #6ad4ff;
+  border-color: rgba(91, 141, 239, 0.55);
+  background: rgba(91, 141, 239, 0.12);
+}
+
+.crew-tile.patient {
+  border-color: rgba(228, 87, 46, 0.55);
+}
+
+.crew-tile.acting {
+  border-color: rgba(91, 141, 239, 0.55);
+}
+
+/* —— Outage ranges on Earth panel —— */
+.outage-ranges {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.outage-title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.outage-row {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.outage-row b {
+  font-size: 0.76rem;
+}
+
+.outage-row span {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.35;
 }

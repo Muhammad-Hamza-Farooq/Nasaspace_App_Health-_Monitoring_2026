@@ -2,7 +2,7 @@
 
 import { usePulse } from "@/lib/pulse/store";
 
-const TOTAL_STEPS = 8;
+const TOTAL_STEPS = 9;
 
 export function DemoOverlay() {
   const {

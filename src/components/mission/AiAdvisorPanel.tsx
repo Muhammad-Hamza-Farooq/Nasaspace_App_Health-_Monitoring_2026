@@ -32,6 +32,10 @@ export function AiAdvisorPanel() {
         </p>
       </header>
 
+      <p className="device-hint" data-testid="ai-device-hint">
+        Runs on crew laptop / module workstation · 7B–8B Q4 · local vector store
+      </p>
+
       <details className="model-posture" data-testid="local-model-posture">
         <summary>
           Offline model · 7B–8B Q4 · ~8 GB VRAM or 32 GB RAM
