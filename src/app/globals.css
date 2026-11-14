@@ -521,6 +521,66 @@ body {
   font-size: 0.72rem;
 }
 
+.action-list .cite-chip {
+  margin-top: 0.25rem;
+  color: var(--accent-2);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.anomaly-phase {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+.problem-line {
+  color: var(--danger) !important;
+  font-weight: 600;
+}
+
+.cite-dataset {
+  font-size: 0.7rem !important;
+}
+
+.model-posture {
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.22);
+  padding: 0.45rem;
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 0.35rem;
+}
+
+.model-posture h3 {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.model-posture-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.model-posture-list li {
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.model-posture-list b {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  margin-right: 0.35rem;
+}
+
 .mission-log {
   list-style: none;
   margin: 0;

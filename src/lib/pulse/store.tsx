@@ -224,10 +224,21 @@ export function PulseProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!anomaly?.recovering) return;
     if (recoveryProgress >= 1) {
-      setAnomaly(null);
-      setRecoveryProgress(0);
-      pushLog("Vitals returned to mission-normal band.");
-      return;
+      pushLog("Monitoring complete: vitals returned to mission-normal band.");
+      setAnomaly((prev) =>
+        prev ? { ...prev, phase: "normalized", recovering: false } : prev,
+      );
+      const clearId = window.setTimeout(() => {
+        setAnomaly(null);
+        setRecoveryProgress(0);
+      }, 2400);
+      return () => window.clearTimeout(clearId);
+    }
+    if (recoveryProgress > 0 && anomaly.phase !== "monitoring") {
+      setAnomaly((prev) =>
+        prev ? { ...prev, phase: "monitoring" } : prev,
+      );
+      pushLog("Monitoring vitals after cited procedures…");
     }
     const id = window.setTimeout(
       () => setRecoveryProgress((p) => Math.min(1, p + 0.22)),
@@ -385,12 +396,13 @@ export function PulseProvider({ children }: { children: ReactNode }) {
       setRecoveryProgress(0);
       setSelectedCrewId(crewId);
       setTab("vitals");
-      pushLog(`Anomaly on ${crewId}: ${next.title}`);
+      pushLog(`${next.problemLabel} on ${crewId}`);
+      pushLog(`Local AI advising from citations. ${next.datasetNote}`);
       const receipt = createReceipt({
         kind: "engine",
         channel: "vitals",
-        summary: `Anomaly detected — ${next.title}`,
-        payload: { crewId, kind },
+        summary: `Anomaly detected: ${next.title}`,
+        payload: { crewId, kind, citations: next.interventions.map((i) => i.citation.id) },
       });
       setReceipts(appendReceipt(receipt));
       if (opsMode === "OFFLINE_LOCAL" || link === "LOS") {
@@ -398,7 +410,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
           {
             crewId,
             severity: "urgent",
-            message: `OFFLINE AI: ${next.title} — awaiting local interventions`,
+            message: `OFFLINE AI: ${next.title}; awaiting local cited interventions`,
           },
           "LOS",
         );
@@ -415,19 +427,31 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         if (prev.applied.includes(id)) return prev;
         const applied = [...prev.applied, id];
         const item = prev.interventions.find((i) => i.id === id);
-        pushLog(`Local AI action: ${item?.label ?? id}`);
+        pushLog(
+          `Applying: ${item?.label ?? id} (cite ${item?.citation.id ?? "?"})`,
+        );
         const receipt = createReceipt({
           kind: "engine",
           channel: "ai-action",
           summary: `Applied intervention: ${item?.label ?? id}`,
-          payload: { interventionId: id, crewId: prev.crewId },
+          payload: {
+            interventionId: id,
+            crewId: prev.crewId,
+            citationId: item?.citation.id,
+            citationSource: item?.citation.source,
+          },
         });
         setReceipts(appendReceipt(receipt));
         const allDone = applied.length >= prev.interventions.length;
         if (allDone) {
-          pushLog("All recommended actions applied — beginning vital recovery.");
+          pushLog("Cited procedures applied. Monitoring vitals…");
         }
-        return { ...prev, applied, recovering: allDone ? true : prev.recovering };
+        return {
+          ...prev,
+          applied,
+          phase: allDone ? "monitoring" : "applying",
+          recovering: allDone ? true : prev.recovering,
+        };
       });
     },
     [pushLog],
@@ -439,21 +463,26 @@ export function PulseProvider({ children }: { children: ReactNode }) {
       const applied = prev.interventions.map((i) => i.id);
       for (const i of prev.interventions) {
         if (!prev.applied.includes(i.id)) {
-          pushLog(`Local AI action: ${i.label}`);
+          pushLog(`Applying: ${i.label} (cite ${i.citation.id})`);
           setReceipts(
             appendReceipt(
               createReceipt({
                 kind: "engine",
                 channel: "ai-action",
                 summary: `Applied intervention: ${i.label}`,
-                payload: { interventionId: i.id, crewId: prev.crewId },
+                payload: {
+                  interventionId: i.id,
+                  crewId: prev.crewId,
+                  citationId: i.citation.id,
+                  citationSource: i.citation.source,
+                },
               }),
             ),
           );
         }
       }
-      pushLog("All recommended actions applied — beginning vital recovery.");
-      return { ...prev, applied, recovering: true };
+      pushLog("Cited procedures applied. Monitoring vitals…");
+      return { ...prev, applied, phase: "monitoring", recovering: true };
     });
     setRecoveryProgress(0.05);
   }, [pushLog]);
@@ -548,18 +577,18 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         id: "vitals-anomaly",
         title: "Crew vital anomaly",
         caption:
-          "Local AI flags Nova Reyes — tachycardia under storm stress. Suggestions ready.",
-        lookAt: "Look at B · Crew (Nova hot) and E · Local AI for suggested actions.",
+          "Local AI flags Nova Reyes: high heart rate. Cited actions ready.",
+        lookAt: "Look at B Crew (Nova hot) and E Local AI problem + citations.",
         focus: "ai",
         tab: "overview",
         run: () => triggerAnomaly("nova", "tachycardia"),
       },
       {
         id: "act",
-        title: "AI actions applied",
+        title: "Cited AI actions applied",
         caption:
-          "Offline AI executes rest, fluids, and tighter HR watch — without Earth.",
-        lookAt: "Look at E · Local AI — actions mark Done, then recovery starts.",
+          "Offline AI applies rest, fluids, and tighter HR watch with citation IDs.",
+        lookAt: "Look at E Local AI: Apply all cited actions, then monitoring.",
         focus: "ai",
         tab: "overview",
         run: () => applyAllInterventions(),
@@ -568,8 +597,8 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         id: "recover",
         title: "Vitals normalizing",
         caption:
-          "After local actions, numbers trend back to mission-normal.",
-        lookAt: "Look at C · Live floor — HR/SpO₂ return to normal numbers.",
+          "After cited procedures, monitoring continues until vitals are normal.",
+        lookAt: "Look at C Live floor: HR and SpO2 return to normal numbers.",
         focus: "floor",
         tab: "overview",
         run: () => {
@@ -578,12 +607,13 @@ export function PulseProvider({ children }: { children: ReactNode }) {
               ? {
                   ...prev,
                   recovering: true,
+                  phase: "monitoring",
                   applied: prev.interventions.map((i) => i.id),
                 }
               : prev,
           );
           setRecoveryProgress((p) => Math.max(p, 0.35));
-          pushLog("Recovery in progress — trending to normal vitals.");
+          pushLog("Monitoring vitals after cited procedures…");
         },
       },
       {
