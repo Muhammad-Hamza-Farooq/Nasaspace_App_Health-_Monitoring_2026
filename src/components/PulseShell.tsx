@@ -145,7 +145,7 @@ function ShellInner() {
           </main>
         </Zone>
 
-        <div className="mission-right">
+        <div className="mission-bottom">
           <Zone id="earth" code="D" title="Earth medical link" className="zone-earth">
             <EarthLinkPanel />
           </Zone>
