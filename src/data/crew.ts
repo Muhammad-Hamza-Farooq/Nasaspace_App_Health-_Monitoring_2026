@@ -13,8 +13,8 @@ export const CREW: CrewMember[] = [
   { id: "ravi", name: "Ravi Sharma", role: "Science Officer", age: 38, seed: 303 },
   {
     id: "amara",
-    name: "Dr. Amara Diallo",
-    role: "Crew Medical Officer",
+    name: "Amara Diallo",
+    role: "Mission Specialist",
     age: 44,
     seed: 404,
   },
