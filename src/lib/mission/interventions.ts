@@ -103,7 +103,8 @@ export const ANOMALY_PRESETS: Record<
           {
             id: "CMO-SO-12",
             label: "CMO standing order 12",
-            source: "Crew Medical Officer standing orders (demo placeholder)",
+            source:
+            "Earth CMO standing orders cached onboard (demo placeholder) — no physician on crew",
           },
         ],
       },
@@ -127,7 +128,8 @@ export const ANOMALY_PRESETS: Record<
         citation: {
           id: "CMO-SO-12",
           label: "CMO standing order 12",
-          source: "Crew Medical Officer standing orders (demo placeholder)",
+          source:
+            "Earth CMO standing orders cached onboard (demo placeholder) — no physician on crew",
         },
       },
       {
@@ -192,7 +194,8 @@ export const ANOMALY_PRESETS: Record<
         citation: {
           id: "CMO-SO-08",
           label: "CMO standing order 08",
-          source: "Crew Medical Officer standing orders (demo placeholder)",
+          source:
+            "Earth CMO standing orders cached onboard (demo placeholder) — no physician on crew",
         },
       },
       {

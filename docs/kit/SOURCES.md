@@ -69,4 +69,4 @@ NASA already operates CHeCS on ISS (11) and its Exploration Medical Capability e
 
 ## Fictional-content disclosure
 
-The four crew members (Nova Reyes, Cass Okonkwo, Ravi Sharma, Dr. Amara Diallo) are fictional. Vital streams are synthesized deterministically (seeded); manual entry and CSV import exist so judges can feed real data in. Every screen carries: *SIMULATED DATA — DEMONSTRATION ONLY, NOT FOR MEDICAL USE*.
+The four crew members (Nova Reyes, Cass Okonkwo, Ravi Sharma, Amara Diallo) are fictional — flight crew only; no physician aboard. Vital streams are synthesized deterministically (seeded); manual entry and CSV import exist so judges can feed real data in. Every screen carries: *SIMULATED DATA — DEMONSTRATION ONLY, NOT FOR MEDICAL USE*.

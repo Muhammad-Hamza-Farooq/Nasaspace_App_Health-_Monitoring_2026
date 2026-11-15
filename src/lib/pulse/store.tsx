@@ -671,7 +671,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         id: "crew-apply",
         title: "Second crew applies care",
         caption:
-          "Dr. Amara Diallo (Crew Medical Officer) applies rest, fluids, and tighter HR watch from the citations.",
+          "Amara Diallo (Mission Specialist) applies rest, fluids, and tighter HR watch from the cited standing orders. No doctor on this crew — flight crew follows the checklist.",
         lookAt: "Look at B Amara (APPLYING) and E actions flipping to Applied.",
         focus: "crew",
         tab: "overview",
@@ -680,7 +680,9 @@ export function PulseProvider({ children }: { children: ReactNode }) {
           setActingCrewId("amara");
           setSelectedCrewId("amara");
           applyAllInterventions();
-          pushLog("Amara Diallo applying cited procedures to Nova Reyes.");
+          pushLog(
+            "Amara Diallo (Mission Specialist) applying cited procedures to Nova Reyes.",
+          );
         },
       },
       {
@@ -709,11 +711,11 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         },
       },
       {
-        id: "hold-offline",
-        title: "Still offline · crew safe",
+        id: "aos-restore",
+        title: "Earth link restored",
         caption:
-          "Flare blackouts last minutes to hours; conjunction can last weeks. Local AI + receipts keep the crew safe until AOS returns.",
-        lookAt: "Look at D still OFFLINE and C vitals nominal. Demo ends here — no Rules tab.",
+          "AOS returns. Surgeons are ONLINE again. Offline receipts and escalations sync to Earth while the crew stays in the clear.",
+        lookAt: "Look at D Earth link ONLINE / AOS and A strip SURGEONS ONLINE.",
         focus: "earth",
         tab: "overview",
         delayMs: 5500,
@@ -723,11 +725,12 @@ export function PulseProvider({ children }: { children: ReactNode }) {
           setAnomaly(null);
           setRecoveryProgress(0);
           setStormActive(false);
-          // Stay LOS / OFFLINE — autonomy story, not a tidy reconnect finale.
-          setLink("LOS");
-          setOpsMode("OFFLINE_LOCAL");
+          setIncidentAlert(null);
+          setSpaceWx("clear");
+          setLink("AOS");
+          setOpsMode("ONLINE_EARTH");
           pushLog(
-            "Demo complete — offline local AI held the floor through flare + conjunction risk.",
+            "AOS restored — Earth surgeons ONLINE. Offline receipts syncing.",
           );
         },
       },
@@ -742,7 +745,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
         setDemoActive(false);
         setDemoTitle("Mission complete");
         setDemoCaption(
-          "Offline local AI kept the crew safe through flare blackout and conjunction risk.",
+          "Local AI held the crew through blackout; Earth link is back ONLINE.",
         );
         return;
       }
@@ -776,7 +779,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
       stopDemo();
       setDemoTitle("Mission complete");
       setDemoCaption(
-        "Offline local AI kept the crew safe through flare blackout and conjunction risk.",
+        "Local AI held the crew through blackout; Earth link is back ONLINE.",
       );
       return;
     }
