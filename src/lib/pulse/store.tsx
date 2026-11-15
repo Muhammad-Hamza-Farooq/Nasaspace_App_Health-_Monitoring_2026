@@ -113,6 +113,7 @@ type PulseState = {
   applyIntervention: (id: string) => void;
   applyAllInterventions: () => void;
   demoActive: boolean;
+  demoPaused: boolean;
   demoIndex: number;
   demoCaption: string;
   demoTitle: string;
@@ -124,6 +125,9 @@ type PulseState = {
   actingCrewId: string | null;
   startDemo: () => void;
   stopDemo: () => void;
+  pauseDemo: () => void;
+  resumeDemo: () => void;
+  toggleDemoPause: () => void;
   nextDemoStep: () => void;
   missionLog: { id: string; text: string }[];
 };
@@ -190,6 +194,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     },
   ]);
   const [demoActive, setDemoActive] = useState(false);
+  const [demoPaused, setDemoPaused] = useState(false);
   const [demoIndex, setDemoIndex] = useState(0);
   const [demoCaption, setDemoCaption] = useState("");
   const [demoTitle, setDemoTitle] = useState("");
@@ -200,6 +205,8 @@ export function PulseProvider({ children }: { children: ReactNode }) {
   const [patientCrewId, setPatientCrewId] = useState<string | null>(null);
   const [actingCrewId, setActingCrewId] = useState<string | null>(null);
   const demoTimer = useRef<number | null>(null);
+  const demoStepStartedAt = useRef<number>(0);
+  const demoRemainingMs = useRef<number | null>(null);
 
   const stormBoost = stormActive ? 1 : 0;
   const baseSnapshots = useMemo(
@@ -762,6 +769,8 @@ export function PulseProvider({ children }: { children: ReactNode }) {
 
   const stopDemo = useCallback(() => {
     clearDemoTimer();
+    demoRemainingMs.current = null;
+    setDemoPaused(false);
     setDemoActive(false);
     setDemoTitle("");
     setDemoCaption("");
@@ -772,8 +781,34 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     setPatientCrewId(null);
   }, [clearDemoTimer]);
 
+  const pauseDemo = useCallback(() => {
+    if (!demoActive || demoPaused) return;
+    const step = demoSteps[demoIndex];
+    const full = step?.delayMs ?? 4500;
+    const elapsed = Date.now() - demoStepStartedAt.current;
+    demoRemainingMs.current = Math.max(500, full - elapsed);
+    clearDemoTimer();
+    setDemoPaused(true);
+    setDemoLookAt((prev) =>
+      prev.includes("PAUSED") ? prev : `PAUSED · ${prev}`,
+    );
+  }, [clearDemoTimer, demoActive, demoPaused, demoIndex, demoSteps]);
+
+  const resumeDemo = useCallback(() => {
+    if (!demoActive || !demoPaused) return;
+    setDemoPaused(false);
+    setDemoLookAt((prev) => prev.replace(/^PAUSED · /, ""));
+  }, [demoActive, demoPaused]);
+
+  const toggleDemoPause = useCallback(() => {
+    if (demoPaused) resumeDemo();
+    else pauseDemo();
+  }, [demoPaused, pauseDemo, resumeDemo]);
+
   const nextDemoStep = useCallback(() => {
     clearDemoTimer();
+    demoRemainingMs.current = null;
+    setDemoPaused(false);
     const next = demoIndex + 1;
     if (next >= demoSteps.length) {
       stopDemo();
@@ -788,18 +823,26 @@ export function PulseProvider({ children }: { children: ReactNode }) {
 
   const startDemo = useCallback(() => {
     clearDemoTimer();
+    demoRemainingMs.current = null;
+    setDemoPaused(false);
     setDemoActive(true);
     applyDemoStep(0);
   }, [applyDemoStep, clearDemoTimer]);
 
   useEffect(() => {
-    if (!demoActive) return;
+    if (!demoActive || demoPaused) {
+      clearDemoTimer();
+      return clearDemoTimer;
+    }
     clearDemoTimer();
     const step = demoSteps[demoIndex];
-    const delay = step?.delayMs ?? 4500;
+    const full = step?.delayMs ?? 4500;
+    const delay = demoRemainingMs.current ?? full;
+    demoRemainingMs.current = null;
+    demoStepStartedAt.current = Date.now();
     demoTimer.current = window.setTimeout(() => nextDemoStep(), delay);
     return clearDemoTimer;
-  }, [demoActive, demoIndex, demoSteps, nextDemoStep, clearDemoTimer]);
+  }, [demoActive, demoPaused, demoIndex, demoSteps, nextDemoStep, clearDemoTimer]);
 
   const value: PulseState = {
     tab,
@@ -834,6 +877,7 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     applyIntervention,
     applyAllInterventions,
     demoActive,
+    demoPaused,
     demoIndex,
     demoCaption,
     demoTitle,
@@ -845,6 +889,9 @@ export function PulseProvider({ children }: { children: ReactNode }) {
     actingCrewId,
     startDemo,
     stopDemo,
+    pauseDemo,
+    resumeDemo,
+    toggleDemoPause,
     nextDemoStep,
     missionLog,
   };

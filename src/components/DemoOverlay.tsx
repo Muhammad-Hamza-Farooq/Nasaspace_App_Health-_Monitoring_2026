@@ -7,12 +7,14 @@ const TOTAL_STEPS = 9;
 export function DemoOverlay() {
   const {
     demoActive,
+    demoPaused,
     demoIndex,
     demoTitle,
     demoCaption,
     demoLookAt,
     startDemo,
     stopDemo,
+    toggleDemoPause,
     nextDemoStep,
   } = usePulse();
 
@@ -35,10 +37,15 @@ export function DemoOverlay() {
   if (!demoActive) return null;
 
   return (
-    <div className="demo-bar" data-testid="demo-overlay" role="status" aria-live="polite">
+    <div
+      className={`demo-bar ${demoPaused ? "paused" : ""}`}
+      data-testid="demo-overlay"
+      role="status"
+      aria-live="polite"
+    >
       <div className="demo-progress">
         <span>
-          MISSION {demoIndex + 1}/{TOTAL_STEPS}
+          {demoPaused ? "PAUSED" : "MISSION"} {demoIndex + 1}/{TOTAL_STEPS}
         </span>
         <div className="demo-track">
           <div
@@ -55,11 +62,30 @@ export function DemoOverlay() {
         </p>
       </div>
       <div className="demo-actions">
-        <button type="button" className="btn" data-testid="demo-next" onClick={nextDemoStep}>
+        <button
+          type="button"
+          className={demoPaused ? "btn accent" : "btn"}
+          data-testid="demo-pause"
+          onClick={toggleDemoPause}
+        >
+          {demoPaused ? "Resume" : "Pause"}
+        </button>
+        <button
+          type="button"
+          className="btn"
+          data-testid="demo-next"
+          onClick={nextDemoStep}
+          title="Skip to next beat"
+        >
           Next
         </button>
-        <button type="button" className="btn ghost" data-testid="demo-stop" onClick={stopDemo}>
-          Exit
+        <button
+          type="button"
+          className="btn danger"
+          data-testid="demo-stop"
+          onClick={stopDemo}
+        >
+          Stop
         </button>
       </div>
     </div>

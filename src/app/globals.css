@@ -252,6 +252,15 @@ body {
   grid-template-columns: 1fr auto;
 }
 
+.demo-bar.paused {
+  border-color: rgba(240, 162, 2, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(240, 162, 2, 0.25);
+}
+
+.demo-bar.paused .demo-progress span {
+  color: var(--accent-2);
+}
+
 .demo-bar p {
   margin: 0.15rem 0 0;
   color: var(--muted);

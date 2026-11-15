@@ -35,7 +35,10 @@ function ShellInner() {
     opsMode,
     link,
     startDemo,
+    stopDemo,
+    toggleDemoPause,
     demoActive,
+    demoPaused,
     toggleStorm,
     escalateSelected,
     injectBadSample,
@@ -92,14 +95,35 @@ function ShellInner() {
           </div>
 
           <div className="top-actions">
-            <button
-              type="button"
-              className={demoActive ? "btn danger" : "btn accent"}
-              data-testid="demo-mode-btn"
-              onClick={startDemo}
-            >
-              {demoActive ? "Mission running…" : "Mission Demo"}
-            </button>
+            {!demoActive ? (
+              <button
+                type="button"
+                className="btn accent"
+                data-testid="demo-mode-btn"
+                onClick={startDemo}
+              >
+                Mission Demo
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className={demoPaused ? "btn accent" : "btn"}
+                  data-testid="demo-pause-top"
+                  onClick={toggleDemoPause}
+                >
+                  {demoPaused ? "Resume demo" : "Pause demo"}
+                </button>
+                <button
+                  type="button"
+                  className="btn danger"
+                  data-testid="demo-stop-top"
+                  onClick={stopDemo}
+                >
+                  Stop demo
+                </button>
+              </>
+            )}
             <button
               type="button"
               className={stormActive ? "btn danger" : "btn"}
